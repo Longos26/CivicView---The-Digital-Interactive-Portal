@@ -374,7 +374,7 @@ export default function DashUsers() {
           <p className='text-gray-500 dark:text-gray-400'>
             {!currentUser?.isAdmin 
               ? "You don't have permission to view users." 
-              : "You have no users yet!"}
+              : "You have no user admins yet!"}
           </p>
         </div>
       )}

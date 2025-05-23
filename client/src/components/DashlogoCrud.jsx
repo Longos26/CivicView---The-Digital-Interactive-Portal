@@ -510,7 +510,7 @@ export default function DashLogo() {
         </div>
       )}
 
-      {/* Search and Add button */}
+      {/* Search and Add button
       <div className="flex flex-col sm:flex-row gap-4 mb-6">
         <div className="relative flex-1">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -524,7 +524,7 @@ export default function DashLogo() {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-      </div>
+      </div> */}
 
       {/* Main content */}
       {isLoading ? (
