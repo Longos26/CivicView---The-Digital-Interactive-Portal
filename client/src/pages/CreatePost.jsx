@@ -89,6 +89,12 @@ export default function CreatePost() {
       return;
     }
 
+    // Check if image is uploaded
+    if (!formData.image && !formData.video) {
+      setPublishError('Please upload an image or video before publishing');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const res = await fetch('/api/post/create', {
@@ -451,7 +457,7 @@ export default function CreatePost() {
                 <span className="ml-2">Publishing...</span>
               </div>
             ) : (
-              'Publish Post'
+              'Publish'
             )}
           </button>
         </div>

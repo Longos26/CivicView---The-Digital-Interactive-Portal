@@ -48,7 +48,7 @@ export const create = async (req, res, next) => {
 export const getposts = async (req, res, next) => {
   try {
     const startIndex = parseInt(req.query.startIndex) || 0;
-    const limit = parseInt(req.query.limit) || 9;
+    const limit = parseInt(req.query.limit) || 0; // Changed from 9 to 100 or any higher number
     const sortDirection = req.query.order === 'asc' ? 1 : -1;
     const posts = await Post.find({
       ...(req.query.userId && { userId: req.query.userId }),
@@ -92,11 +92,17 @@ export const getposts = async (req, res, next) => {
 
 export const deletepost = async (req, res, next) => {
   try {
+    console.log('Delete post request:', req.params);
+    console.log('User attempting delete:', req.user);
+    
     const post = await Post.findById(req.params.postId);
     if (!post) {
+      console.log('Post not found');
       return next(errorHandler(404, 'Post not found'));
     }
 
+    console.log('Post found:', post._id, 'Post userId:', post.userId, 'User id:', req.user.id);
+    
     // Check if user is admin or the owner of the post
     if (!req.user.isAdmin && req.user.id !== post.userId.toString()) {
       return next(errorHandler(403, 'You are not allowed to delete this post'));
