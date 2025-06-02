@@ -14,7 +14,8 @@ import {
   HiCamera,
   HiQuestionMarkCircle,
   HiMenu,
-  HiX
+  HiX,
+  HiOutlineTag // Added for Services icon
 } from 'react-icons/hi';
 import { useEffect, useState, useMemo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
@@ -70,6 +71,13 @@ const sidebarItems = [
     icon: HiTag,
     adminOnly: true,
     path: '/dashboard?tab=categories',
+  },
+  {
+    id: 'dashservices', 
+    label: 'Services',
+    icon: HiOutlineTag,
+    adminOnly: true,
+    path: '/dashboard?tab=services',
   },
   {
     id: 'users',
@@ -165,7 +173,6 @@ export default function DashSidebar() {
   if (isMobile) {
     return (
       <>
-        {/* Modern Floating Hamburger Button for Mobile */}
         <div className={`fixed top-6 right-6 z-50 transition-all duration-500 ease-out ${isSidebarOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
           <button 
             onClick={() => setIsSidebarOpen(!isSidebarOpen)} 
@@ -176,10 +183,8 @@ export default function DashSidebar() {
           </button>
         </div>
 
-        {/* Modern Mobile Sidebar with Glassmorphism */}
         <div className={`fixed inset-y-0 right-0 bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-l border-gray-200/50 dark:border-gray-700/50 shadow-2xl z-40 transition-all duration-500 ease-out ${isSidebarOpen ? 'w-80' : 'translate-x-full'}`}>
           <div className="flex flex-col h-full p-6">
-            {/* Enhanced Header with Close Button */}
             <div className="flex items-center justify-between mb-8">
               <div className="flex-1">
                 <h2 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
@@ -194,7 +199,6 @@ export default function DashSidebar() {
               </button>
             </div>
 
-            {/* Enhanced Navigation Links */}
             <div className="space-y-3 flex-1 overflow-y-auto">
               {filteredItems.map((item) => {
                 const IconComponent = item.icon;
@@ -220,7 +224,6 @@ export default function DashSidebar() {
               })}
             </div>
 
-            {/* Sign Out Button */}
             <div className="mt-6">
               <button
                 onClick={handleSignout}
@@ -233,7 +236,6 @@ export default function DashSidebar() {
           </div>
         </div>
 
-        {/* Modern Backdrop Overlay */}
         {isSidebarOpen && (
           <div 
             className="fixed inset-0 bg-black/20 backdrop-blur-sm z-30 transition-all duration-500 ease-out"
@@ -244,12 +246,9 @@ export default function DashSidebar() {
     );
   }
 
-  // Desktop Sidebar
   return (
     <div className="w-full md:w-64 h-full bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl border-r border-gray-200/50 dark:border-gray-700/50 shadow-xl">
       <div className="flex flex-col h-full p-6">
-
-        {/* Enhanced Navigation Links */}
         <div className="space-y-3 flex-1 overflow-y-auto">
           {filteredItems.map((item) => {
             const IconComponent = item.icon;
@@ -273,8 +272,6 @@ export default function DashSidebar() {
             );
           })}
         </div>
-
-        
       </div>
     </div>
   );

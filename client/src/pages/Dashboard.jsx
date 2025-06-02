@@ -16,8 +16,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import UserApproval from '../components/UserApproval';
 import DashFeedback from '../components/DashFeedback';
 import DashFaqs from '../components/DashFaqs';
-import FAQs from './FAQs';
-
+import DashServices from '../components/DashServices'; 
 
 export default function Dashboard() {
   const location = useLocation();
@@ -41,7 +40,6 @@ export default function Dashboard() {
     if (categoryIdFromUrl) {
       setCategoryId(categoryIdFromUrl);
     }
-    // Simulate loading completion
     setTimeout(() => {
       setIsLoading(false);
     }, 500);
@@ -57,12 +55,10 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-white dark:bg-gray-900">
-      {/* Sidebar */}
       <div className="md:w-56">
         <DashSidebar />
       </div>
 
-      {/* Main Content */}
       <div className="flex-1 p-4 bg-white dark:bg-gray-900">
         {tab === 'profile' && <DashProfile />}
         {tab === 'posts' && <DashPosts />}
@@ -70,14 +66,15 @@ export default function Dashboard() {
         {tab === 'comments' && <DashComments />}
         {tab === 'dash' && <DashboardComp />}
         {tab === 'categories' && <DashCategories />}
-        {tab === 'dashlogocrud' && <DashlogoCrud/>}
-        {tab === 'createlogo' && <CreateLogo/>}
+        {tab === 'dashlogocrud' && <DashlogoCrud />}
+        {tab === 'createlogo' && <CreateLogo />}
         {tab === 'createpost' && <CreatePost />}
         {tab === 'updatepost' && <UpdatePost postId={postId} />}
         {tab === 'updatecategory' && <UpdateCategory categoryId={categoryId} />}
         {tab === 'userapproval' && <UserApproval />}
         {tab === 'feedback' && <DashFeedback />}
         {tab === 'faqs' && <DashFaqs />}
+        {tab === 'dashservices' && <DashServices />} 
       </div>
     </div>
   );
