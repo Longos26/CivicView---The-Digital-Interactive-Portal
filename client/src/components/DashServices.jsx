@@ -1,15 +1,16 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { 
-  HiOutlineTag, 
+  HiOutlineDocumentText,
   HiOutlineCheckCircle, 
   HiOutlineExclamationCircle,
   HiOutlinePlus,
   HiOutlinePencil,
   HiOutlineTrash,
   HiOutlineChevronLeft,
-  HiOutlineChevronRight
+  HiOutlineChevronRight,
+  HiOutlineClock
 } from 'react-icons/hi';
 import { motion } from 'framer-motion';
 import LoadingSpinner from './LoadingSpinner';
@@ -47,7 +48,7 @@ export default function ServiceManager() {
     showModal: false,
     isPageLoading: true,
     searchTerm: '',
-    isSearching: false
+    lastUpdated: new Date().toLocaleTimeString()
   });
 
   // Destructure state for easier access
@@ -63,22 +64,12 @@ export default function ServiceManager() {
     serviceToDelete,
     showModal,
     isPageLoading,
-    isSearching
+    lastUpdated
   } = state;
 
   // Memoized pagination calculations
   const { currentItems, totalPages, filteredCount } = useMemo(() => {
-    // If we're searching via API, don't filter locally
-    if (state.searchTerm && isSearching) {
-      const indexOfLastItem = currentPage * ITEMS_PER_PAGE;
-      const indexOfFirstItem = indexOfLastItem - ITEMS_PER_PAGE;
-      const currentItems = services.slice(indexOfFirstItem, indexOfLastItem);
-      const totalPages = Math.ceil(services.length / ITEMS_PER_PAGE);
-      
-      return { currentItems, totalPages, filteredCount: services.length };
-    }
-
-    // Local filtering when not using search API
+    // Filter services based on search term
     const filteredServices = services.filter(service => 
       service.name.toLowerCase().includes(state.searchTerm.toLowerCase()) ||
       (service.description && service.description.toLowerCase().includes(state.searchTerm.toLowerCase()))
@@ -90,7 +81,7 @@ export default function ServiceManager() {
     const totalPages = Math.ceil(filteredServices.length / ITEMS_PER_PAGE);
     
     return { currentItems, totalPages, filteredCount: filteredServices.length };
-  }, [services, currentPage, state.searchTerm, isSearching]);
+  }, [services, currentPage, state.searchTerm]);
 
   // State updater helper
   const updateState = (updates) => {
@@ -107,41 +98,18 @@ export default function ServiceManager() {
     }
   }, [successMessage]);
 
-  // Get auth token
-  const getAuthToken = () => {
-    return localStorage.getItem('token');
-  };
-
   // Fetch services
-  const fetchServices = useCallback(async () => {
+  const fetchServices = async () => {
     try {
-      const token = getAuthToken();
-      if (!token) {
-        navigate('/login');
-        return;
-      }
-
-      const res = await fetch('/api/service', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      if (res.status === 401) {
-        // Token expired or invalid
-        localStorage.removeItem('token');
-        navigate('/login');
-        return;
-      }
-
+      updateState({ isPageLoading: true });
+      const res = await fetch('/api/services');
       const data = await res.json();
       
       if (res.ok) {
         updateState({ 
-          services: data, 
+          services: data.services || [], 
           isPageLoading: false,
-          isSearching: false
+          lastUpdated: new Date().toLocaleTimeString()
         });
       } else {
         throw new Error(data.message || 'Failed to fetch services');
@@ -150,71 +118,11 @@ export default function ServiceManager() {
       console.error('Failed to fetch services:', err);
       updateState({ error: err.message, isPageLoading: false });
     }
-  }, [navigate]);
-
-  // Search services using API
-  const searchServices = useCallback(async (searchTerm) => {
-    if (!searchTerm.trim()) {
-      // If search term is empty, fetch all services
-      fetchServices();
-      return;
-    }
-
-    try {
-      const token = getAuthToken();
-      if (!token) {
-        navigate('/login');
-        return;
-      }
-
-      updateState({ isSearching: true });
-
-      const res = await fetch(`/api/service/search?q=${encodeURIComponent(searchTerm.trim())}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (res.status === 401) {
-        localStorage.removeItem('token');
-        navigate('/login');
-        return;
-      }
-
-      const data = await res.json();
-      
-      if (res.ok) {
-        updateState({ 
-          services: data.services || [],
-          isSearching: true,
-          currentPage: 1 // Reset to first page for search results
-        });
-      } else {
-        throw new Error(data.message || 'Failed to search services');
-      }
-    } catch (err) {
-      console.error('Failed to search services:', err);
-      updateState({ error: err.message, isSearching: false });
-    }
-  }, [navigate, fetchServices]);
-
-  // Debounced search
-  useEffect(() => {
-    const delayedSearch = setTimeout(() => {
-      if (state.searchTerm) {
-        searchServices(state.searchTerm);
-      } else {
-        fetchServices();
-      }
-    }, 500); // 500ms delay
-
-    return () => clearTimeout(delayedSearch);
-  }, [state.searchTerm, searchServices, fetchServices]);
+  };
 
   useEffect(() => {
     fetchServices();
-  }, [fetchServices]);
+  }, [successMessage]);
 
   // Event handlers
   const handleChange = (e) => {
@@ -235,29 +143,18 @@ export default function ServiceManager() {
     updateState({ loading: true, error: null });
   
     try {
-      const token = getAuthToken();
-      if (!token) {
-        navigate('/login');
-        return;
-      }
-
-      const url = editingId ? `/api/service/${editingId}` : '/api/service';
+      const token = localStorage.getItem('token');
+      const url = editingId ? `/api/services/${editingId}` : '/api/services';
       const method = editingId ? 'PUT' : 'POST';
 
       const res = await fetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(formData),
       });
-
-      if (res.status === 401) {
-        localStorage.removeItem('token');
-        navigate('/login');
-        return;
-      }
   
       const data = await res.json();
   
@@ -272,13 +169,9 @@ export default function ServiceManager() {
         showCreateForm: false,
         loading: false
       });
-
+      
       // Refresh the services list
-      if (state.searchTerm) {
-        searchServices(state.searchTerm);
-      } else {
-        fetchServices();
-      }
+      fetchServices();
     } catch (err) {
       updateState({ 
         error: err.message || 'Network error. Please try again.',
@@ -295,8 +188,7 @@ export default function ServiceManager() {
       },
       editingId: service._id,
       showCreateForm: true,
-      successMessage: '',
-      error: null
+      successMessage: '' // Clear success message when editing starts
     });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -312,24 +204,13 @@ export default function ServiceManager() {
     if (!serviceToDelete) return;
     
     try {
-      const token = getAuthToken();
-      if (!token) {
-        navigate('/login');
-        return;
-      }
-
-      const res = await fetch(`/api/service/${serviceToDelete}`, {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/services/${serviceToDelete}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${token}`,
+          Authorization: `Bearer ${token}`,
         },
       });
-
-      if (res.status === 401) {
-        localStorage.removeItem('token');
-        navigate('/login');
-        return;
-      }
   
       const data = await res.json();
       if (!res.ok) {
@@ -339,15 +220,9 @@ export default function ServiceManager() {
       updateState({
         successMessage: 'Service deleted successfully!',
         showModal: false,
-        serviceToDelete: null
+        serviceToDelete: null,
+        services: services.filter(service => service._id !== serviceToDelete)
       });
-
-      // Refresh the services list
-      if (state.searchTerm) {
-        searchServices(state.searchTerm);
-      } else {
-        fetchServices();
-      }
     } catch (err) {
       updateState({ 
         error: err.message || 'Network error. Please try again.',
@@ -358,21 +233,6 @@ export default function ServiceManager() {
 
   const paginate = (pageNumber) => {
     updateState({ currentPage: pageNumber });
-  };
-
-  const handleSearchChange = (value) => {
-    updateState({ 
-      searchTerm: value,
-      currentPage: 1
-    });
-  };
-
-  const clearSearch = () => {
-    updateState({ 
-      searchTerm: '',
-      currentPage: 1,
-      isSearching: false
-    });
   };
 
   // Render loading state
@@ -389,31 +249,44 @@ export default function ServiceManager() {
       {/* Header and Success/Error Messages */}
       <div className="flex justify-between items-center mb-6 bg-gray-50 dark:bg-gray-800/50 rounded-xl p-6">
         <h2 className="text-2xl font-semibold text-gray-700 dark:text-gray-200 flex items-center gap-3">
-          <HiOutlineTag className="w-8 h-8 text-teal-400 dark:text-teal-500" />
+          <HiOutlineDocumentText className="w-8 h-8 text-teal-400 dark:text-teal-500" />
           Service Management
         </h2>
-        <button
-          onClick={() => updateState({ 
-            showCreateForm: !showCreateForm, 
-            successMessage: '',
-            error: null,
-            editingId: null,
-            formData: { name: '', description: '' }
-          })}
-          className="flex items-center gap-2 bg-gradient-to-r from-teal-400 to-blue-500 dark:from-teal-500 dark:to-blue-600 text-white font-medium px-5 py-2 rounded-lg transition-all duration-300 hover:from-teal-500 hover:to-blue-600 hover:shadow-lg"
-        >
-          <HiOutlinePlus className="h-5 w-5" />
-          {showCreateForm ? 'Hide Form' : 'Create Service'}
-        </button>
+        <div className="flex items-center gap-4">
+          <div className="text-sm text-gray-500 dark:text-gray-400 flex items-center">
+            <HiOutlineClock className="h-4 w-4 mr-2" />
+            <span>Last updated: {lastUpdated}</span>
+          </div>
+          <button
+            onClick={() => updateState({ showCreateForm: !showCreateForm, successMessage: '' })}
+            className="flex items-center gap-2 bg-gradient-to-r from-teal-400 to-blue-500 dark:from-teal-500 dark:to-blue-600 text-white font-medium px-5 py-2 rounded-lg transition-all duration-300 hover:from-teal-500 hover:to-blue-600 hover:shadow-lg"
+          >
+            <HiOutlinePlus className="h-5 w-5" />
+            {showCreateForm ? 'Hide Form' : 'Create Service'}
+          </button>
+        </div>
       </div>
 
       {/* SearchBar */}
-      <SearchBar 
-        searchTerm={state.searchTerm}
-        onSearchChange={handleSearchChange}
-        onClearSearch={clearSearch}
-        isSearching={isSearching}
-      />
+      <div className="mb-6">
+        <div className="relative">
+          <input
+            type="text"
+            value={state.searchTerm}
+            onChange={(e) => updateState({ 
+              searchTerm: e.target.value,
+              currentPage: 1 // Reset to first page when searching
+            })}
+            placeholder="Search services..."
+            className="w-full px-4 py-3 pl-10 rounded-lg border bg-white dark:bg-gray-700 focus:ring-2 focus:ring-teal-500 dark:text-white"
+          />
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+        </div>
+      </div>
 
       {successMessage && (
         <motion.div
@@ -461,9 +334,8 @@ export default function ServiceManager() {
                   id="name"
                   value={formData.name}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  className="w-full px-4 py-3 rounded-lg border bg-white dark:bg-gray-700 focus:ring-2 focus:ring-teal-500"
                   placeholder="Enter service name"
-                  required
                 />
               </div>
               <div>
@@ -475,7 +347,7 @@ export default function ServiceManager() {
                   rows="3"
                   value={formData.description}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  className="w-full px-4 py-3 rounded-lg border bg-white dark:bg-gray-700 focus:ring-2 focus:ring-teal-500"
                   placeholder="Enter service description"
                 ></textarea>
               </div>
@@ -488,8 +360,7 @@ export default function ServiceManager() {
                       showCreateForm: false,
                       editingId: null,
                       formData: { name: '', description: '' },
-                      successMessage: '',
-                      error: null
+                      successMessage: ''
                     });
                   }}
                   className="flex items-center gap-2 bg-gradient-to-r from-gray-400 to-gray-500 dark:from-gray-500 dark:to-gray-600 text-white font-medium px-5 py-2 rounded-lg transition-all duration-300 hover:from-gray-500 hover:to-gray-600 hover:shadow-lg"
@@ -532,6 +403,12 @@ export default function ServiceManager() {
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                       Description
                     </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      Created
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      Updated
+                    </th>
                     <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                       Actions
                     </th>
@@ -543,15 +420,19 @@ export default function ServiceManager() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                         {service.name}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-300">
-                        <div className="max-w-xs">
-                          {service.description 
-                            ? service.description.length > 100 
-                              ? `${service.description.substring(0, 100)}...` 
-                              : service.description
-                            : '—'
-                          }
-                        </div>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                        {service.description 
+                          ? service.description.length > 50 
+                            ? `${service.description.substring(0, 50)}...` 
+                            : service.description
+                          : '—'
+                        }
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                        {new Date(service.createdAt).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                        {new Date(service.updatedAt).toLocaleDateString()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex justify-end gap-3">
@@ -565,7 +446,6 @@ export default function ServiceManager() {
                           <button
                             onClick={() => openDeleteModal(service._id)}
                             className="text-red-500 hover:text-red-700 dark:hover:text-red-400 flex items-center transition-colors duration-300"
-                            title="Delete"
                           >
                             <HiOutlineTrash className="w-4 h-4 mr-1" />
                           </button>
@@ -663,16 +543,7 @@ export default function ServiceManager() {
           <NoSearchResults />
         ) : (
           <div className="p-8 text-center">
-            <HiOutlineTag className="w-16 h-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-2">No services yet</h3>
-            <p className="text-gray-500 dark:text-gray-400 mb-6">Create your first service to get started!</p>
-            <button
-              onClick={() => updateState({ showCreateForm: true })}
-              className="flex items-center gap-2 bg-gradient-to-r from-teal-400 to-blue-500 dark:from-teal-500 dark:to-blue-600 text-white font-medium px-5 py-2 rounded-lg transition-all duration-300 hover:from-teal-500 hover:to-blue-600 hover:shadow-lg mx-auto"
-            >
-              <HiOutlinePlus className="h-5 w-5" />
-              Create Service
-            </button>
+            <p className="text-gray-500 dark:text-gray-400">No services found. Create your first service!</p>
           </div>
         )}
       </div>
@@ -710,16 +581,27 @@ export default function ServiceManager() {
                 
                 <div className="flex gap-3 justify-center">
                   <button
-                    onClick={() => updateState({ showModal: false, serviceToDelete: null })}
-                    className="flex-1 px-4 py-2.5 bg-gray-200 text-gray-800                     rounded-lg font-medium transition-colors duration-300 hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500"
+                    onClick={() => updateState({ showModal: false })}
+                    className="flex-1 px-4 py-2.5 bg-gray-200 text-gray-800 font-medium rounded-lg hover:bg-gray-300 transition duration-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 dark:focus:ring-offset-gray-800"
                   >
                     Cancel
                   </button>
+                  
                   <button
                     onClick={handleDeleteConfirm}
-                    className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg font-medium transition-colors duration-300 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600"
+                    disabled={loading}
+                    className={`flex-1 px-4 py-2.5 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition duration-300 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 ${
+                      loading ? 'opacity-60 cursor-not-allowed' : ''
+                    }`}
                   >
-                    Delete
+                    {loading ? (
+                      <div className="flex items-center justify-center">
+                        <LoadingSpinner size="sm" color="white" />
+                        <span className="ml-2">Deleting...</span>
+                      </div>
+                    ) : (
+                      'Delete'
+                    )}
                   </button>
                 </div>
               </div>
@@ -730,56 +612,3 @@ export default function ServiceManager() {
     </div>
   );
 }
-
-// SearchBar Component
-const SearchBar = ({ searchTerm, onSearchChange, onClearSearch, isSearching }) => {
-  return (
-    <div className="mb-6">
-      <div className="relative">
-        <input
-          type="text"
-          value={searchTerm}
-          onChange={(e) => onSearchChange(e.target.value)}
-          placeholder="Search services..."
-          className="w-full px-4 py-3 pl-10 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-        />
-        <svg
-          className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 dark:text-gray-500"
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 20 20"
-          fill="currentColor"
-        >
-          <path
-            fillRule="evenodd"
-            d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
-            clipRule="evenodd"
-          />
-        </svg>
-        {searchTerm && (
-          <button
-            onClick={onClearSearch}
-            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
-          >
-            <svg
-              className="h-5 w-5"
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-            >
-              <path
-                fillRule="evenodd"
-                d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                clipRule="evenodd"
-              />
-            </svg>
-          </button>
-        )}
-        {isSearching && (
-          <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-            <LoadingSpinner size="sm" color="teal" />
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};

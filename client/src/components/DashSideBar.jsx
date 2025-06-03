@@ -77,7 +77,7 @@ const sidebarItems = [
     label: 'Services',
     icon: HiOutlineTag,
     adminOnly: true,
-    path: '/dashboard?tab=services',
+    path: '/dashboard?tab=dashservices',
   },
   {
     id: 'users',
