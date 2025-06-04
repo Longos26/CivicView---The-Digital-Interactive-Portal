@@ -16,6 +16,8 @@ import PostPage from './pages/PostPage';
 import ScrollToTop from './components/ScrollToTop';
 import Search from './pages/Search';
 import FAQs from './pages/FAQs';
+import Services from './pages/Services';
+
 
 
 
@@ -32,6 +34,8 @@ export default function App() {
         <Route path='/sign-up' element={<SignUp />} />
         <Route path='/search' element={<Search />} />
         <Route path='/faqs' element={<FAQs/>} />
+        <Route path='/services' element={<Services />} /> 
+
         <Route element={<PrivateRoute />}>
           <Route path='/dashboard' element={<Dashboard />} />
         </Route>

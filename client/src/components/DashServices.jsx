@@ -1,8 +1,8 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { 
-  HiOutlineDocumentText,
+  HiOutlineTag, 
   HiOutlineCheckCircle, 
   HiOutlineExclamationCircle,
   HiOutlinePlus,
@@ -10,11 +10,10 @@ import {
   HiOutlineTrash,
   HiOutlineChevronLeft,
   HiOutlineChevronRight,
-  HiOutlineClock
+  HiOutlineCog
 } from 'react-icons/hi';
 import { motion } from 'framer-motion';
 import LoadingSpinner from './LoadingSpinner';
-
 // Constants
 const ITEMS_PER_PAGE = 5;
 
@@ -30,7 +29,29 @@ const NoSearchResults = () => (
   </div>
 );
 
-export default function ServiceManager() {
+// SearchBar component
+const SearchBar = ({ searchTerm, onSearchChange }) => {
+  return (
+    <div className="mb-6">
+      <div className="relative">
+        <input
+          type="text"
+          value={searchTerm}
+          onChange={(e) => onSearchChange(e.target.value)}
+          placeholder="Search services..."
+          className="w-full px-4 py-3 pl-10 rounded-lg border bg-white dark:bg-gray-700 focus:ring-2 focus:ring-teal-500 dark:text-white"
+        />
+        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default function DashServices() {
   // State management
   const { currentUser } = useSelector((state) => state.user);
   const navigate = useNavigate();
@@ -47,8 +68,7 @@ export default function ServiceManager() {
     serviceToDelete: null,
     showModal: false,
     isPageLoading: true,
-    searchTerm: '',
-    lastUpdated: new Date().toLocaleTimeString()
+    searchTerm: ''
   });
 
   // Destructure state for easier access
@@ -63,8 +83,7 @@ export default function ServiceManager() {
     editingId,
     serviceToDelete,
     showModal,
-    isPageLoading,
-    lastUpdated
+    isPageLoading
   } = state;
 
   // Memoized pagination calculations
@@ -99,17 +118,15 @@ export default function ServiceManager() {
   }, [successMessage]);
 
   // Fetch services
-  const fetchServices = async () => {
+  const fetchServices = useCallback(async () => {
     try {
-      updateState({ isPageLoading: true });
-      const res = await fetch('/api/services');
+      const res = await fetch('/api/service');
       const data = await res.json();
       
-      if (res.ok) {
+      if (data.success) {
         updateState({ 
-          services: data.services || [], 
-          isPageLoading: false,
-          lastUpdated: new Date().toLocaleTimeString()
+          services: data.services, 
+          isPageLoading: false
         });
       } else {
         throw new Error(data.message || 'Failed to fetch services');
@@ -118,11 +135,11 @@ export default function ServiceManager() {
       console.error('Failed to fetch services:', err);
       updateState({ error: err.message, isPageLoading: false });
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchServices();
-  }, [successMessage]);
+  }, [fetchServices, successMessage]);
 
   // Event handlers
   const handleChange = (e) => {
@@ -144,7 +161,7 @@ export default function ServiceManager() {
   
     try {
       const token = localStorage.getItem('token');
-      const url = editingId ? `/api/services/${editingId}` : '/api/services';
+      const url = editingId ? `/api/service/${editingId}` : '/api/service';
       const method = editingId ? 'PUT' : 'POST';
 
       const res = await fetch(url, {
@@ -158,20 +175,17 @@ export default function ServiceManager() {
   
       const data = await res.json();
   
-      if (!res.ok) {
+      if (data.success) {
+        updateState({
+          successMessage: data.message || (editingId ? 'Service updated successfully!' : 'Service created successfully!'),
+          formData: { name: '', description: '' },
+          editingId: null,
+          showCreateForm: false,
+          loading: false
+        });
+      } else {
         throw new Error(data.message || 'Something went wrong');
       }
-  
-      updateState({
-        successMessage: editingId ? 'Service updated successfully!' : 'Service created successfully!',
-        formData: { name: '', description: '' },
-        editingId: null,
-        showCreateForm: false,
-        loading: false
-      });
-      
-      // Refresh the services list
-      fetchServices();
     } catch (err) {
       updateState({ 
         error: err.message || 'Network error. Please try again.',
@@ -205,7 +219,7 @@ export default function ServiceManager() {
     
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`/api/services/${serviceToDelete}`, {
+      const res = await fetch(`/api/service/${serviceToDelete}`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -213,16 +227,16 @@ export default function ServiceManager() {
       });
   
       const data = await res.json();
-      if (!res.ok) {
+      if (data.success) {
+        updateState({
+          successMessage: data.message || 'Service deleted successfully!',
+          showModal: false,
+          serviceToDelete: null,
+          services: services.filter(service => service._id !== serviceToDelete)
+        });
+      } else {
         throw new Error(data.message || 'Failed to delete service');
       }
-      
-      updateState({
-        successMessage: 'Service deleted successfully!',
-        showModal: false,
-        serviceToDelete: null,
-        services: services.filter(service => service._id !== serviceToDelete)
-      });
     } catch (err) {
       updateState({ 
         error: err.message || 'Network error. Please try again.',
@@ -249,44 +263,28 @@ export default function ServiceManager() {
       {/* Header and Success/Error Messages */}
       <div className="flex justify-between items-center mb-6 bg-gray-50 dark:bg-gray-800/50 rounded-xl p-6">
         <h2 className="text-2xl font-semibold text-gray-700 dark:text-gray-200 flex items-center gap-3">
-          <HiOutlineDocumentText className="w-8 h-8 text-teal-400 dark:text-teal-500" />
+          <HiOutlineCog className="w-8 h-8 text-teal-400 dark:text-teal-500" />
           Service Management
         </h2>
-        <div className="flex items-center gap-4">
-          <div className="text-sm text-gray-500 dark:text-gray-400 flex items-center">
-            <HiOutlineClock className="h-4 w-4 mr-2" />
-            <span>Last updated: {lastUpdated}</span>
-          </div>
-          <button
-            onClick={() => updateState({ showCreateForm: !showCreateForm, successMessage: '' })}
-            className="flex items-center gap-2 bg-gradient-to-r from-teal-400 to-blue-500 dark:from-teal-500 dark:to-blue-600 text-white font-medium px-5 py-2 rounded-lg transition-all duration-300 hover:from-teal-500 hover:to-blue-600 hover:shadow-lg"
-          >
-            <HiOutlinePlus className="h-5 w-5" />
-            {showCreateForm ? 'Hide Form' : 'Create Service'}
-          </button>
-        </div>
+        <button
+          onClick={() => updateState({ showCreateForm: !showCreateForm, successMessage: '' })}
+          className="flex items-center gap-2 bg-gradient-to-r from-teal-400 to-blue-500 dark:from-teal-500 dark:to-blue-600 text-white font-medium px-5 py-2 rounded-lg transition-all duration-300 hover:from-teal-500 hover:to-blue-600 hover:shadow-lg"
+        >
+          <HiOutlinePlus className="h-5 w-5" />
+          {showCreateForm ? 'Hide Form' : 'Create Service'}
+        </button>
       </div>
 
       {/* SearchBar */}
-      <div className="mb-6">
-        <div className="relative">
-          <input
-            type="text"
-            value={state.searchTerm}
-            onChange={(e) => updateState({ 
-              searchTerm: e.target.value,
-              currentPage: 1 // Reset to first page when searching
-            })}
-            placeholder="Search services..."
-            className="w-full px-4 py-3 pl-10 rounded-lg border bg-white dark:bg-gray-700 focus:ring-2 focus:ring-teal-500 dark:text-white"
-          />
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-          </div>
-        </div>
-      </div>
+      <SearchBar 
+        searchTerm={state.searchTerm}
+        onSearchChange={(value) => {
+          updateState({ 
+            searchTerm: value,
+            currentPage: 1 // Reset to first page when searching
+          });
+        }}
+      />
 
       {successMessage && (
         <motion.div
@@ -406,53 +404,55 @@ export default function ServiceManager() {
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                       Created
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                      Updated
-                    </th>
                     <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                  {currentItems.map((service) => (
-                    <tr key={service._id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                        {service.name}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                        {service.description 
-                          ? service.description.length > 50 
-                            ? `${service.description.substring(0, 50)}...` 
-                            : service.description
-                          : '—'
-                        }
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                        {new Date(service.createdAt).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                        {new Date(service.updatedAt).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <div className="flex justify-end gap-3">
-                          <button
-                            onClick={() => handleEdit(service)}
-                            className="text-gray-500 hover:text-teal-600 dark:text-gray-400 dark:hover:text-teal-400 flex items-center transition-colors duration-300"
-                            title="Edit"
-                          >
-                            <HiOutlinePencil className="h-4 w-4 mr-1" />
-                          </button>
-                          <button
-                            onClick={() => openDeleteModal(service._id)}
-                            className="text-red-500 hover:text-red-700 dark:hover:text-red-400 flex items-center transition-colors duration-300"
-                          >
-                            <HiOutlineTrash className="w-4 h-4 mr-1" />
-                          </button>
-                        </div>
+                  {currentItems.length > 0 ? (
+                    currentItems.map((service) => (
+                      <tr key={service._id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                          {service.name}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                          {service.description 
+                            ? service.description.length > 50 
+                              ? `${service.description.substring(0, 50)}...` 
+                              : service.description
+                            : '—'
+                          }
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                          {service.createdAt ? new Date(service.createdAt).toLocaleDateString() : '—'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                          <div className="flex justify-end gap-3">
+                            <button
+                              onClick={() => handleEdit(service)}
+                              className="text-gray-500 hover:text-teal-600 dark:text-gray-400 dark:hover:text-teal-400 flex items-center transition-colors duration-300"
+                              title="Edit"
+                            >
+                              <HiOutlinePencil className="h-4 w-4 mr-1" />
+                            </button>
+                            <button
+                              onClick={() => openDeleteModal(service._id)}
+                              className="text-red-500 hover:text-red-700 dark:hover:text-red-400 flex items-center transition-colors duration-300"
+                            >
+                              <HiOutlineTrash className="w-4 h-4 mr-1" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                  ))
+                  ) : (
+                    <tr>
+                      <td colSpan="4" className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                        {services.length === 0 ? 'No services found. Create your first service!' : 'No results for this page.'}
                       </td>
                     </tr>
-                  ))}
+                  )}
                 </tbody>
               </table>
             </div>

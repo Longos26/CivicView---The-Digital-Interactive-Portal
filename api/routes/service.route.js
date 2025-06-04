@@ -1,5 +1,4 @@
 import express from 'express';
-
 import {
   getServices,
   getService,
@@ -11,8 +10,8 @@ import {
 
 const router = express.Router();
 
-router.get('/search', searchServices);
 
+router.get('/search', searchServices);
 router.get('/', getServices);
 router.post('/', createService);
 router.get('/:id', getService);
