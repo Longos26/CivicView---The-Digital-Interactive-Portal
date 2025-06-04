@@ -15,6 +15,7 @@ import {
   HiQuestionMarkCircle,
   HiMenu,
   HiX,
+  HiCog,
   HiOutlineTag // Added for Services icon
 } from 'react-icons/hi';
 import { useEffect, useState, useMemo } from 'react';
@@ -75,7 +76,7 @@ const sidebarItems = [
   {
     id: 'dashservices', 
     label: 'Services',
-    icon: HiOutlineTag,
+    icon: HiCog,
     adminOnly: true,
     path: '/dashboard?tab=dashservices',
   },
