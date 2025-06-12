@@ -11,6 +11,7 @@ import Footer from './components/Footer';
 import PrivateRoute from './components/PrivateRoute';
 import OnlyAdminPrivateRoute from './components/OnlyAdminPrivateRoute';
 import CreatePost from './pages/CreatePost';
+import CreateLogo from './pages/CreateLogo';
 import UpdatePost from './pages/UpdatePost';
 import PostPage from './pages/PostPage';
 import ScrollToTop from './components/ScrollToTop';
@@ -35,7 +36,7 @@ export default function App() {
         <Route path='/search' element={<Search />} />
         <Route path='/faqs' element={<FAQs/>} />
         <Route path='/services' element={<Services />} /> 
-
+        <Route path='/create-logo' element={<CreateLogo />} />
         <Route element={<PrivateRoute />}>
           <Route path='/dashboard' element={<Dashboard />} />
         </Route>

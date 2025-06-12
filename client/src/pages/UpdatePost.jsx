@@ -59,7 +59,7 @@ export default function UpdatePost() {
           setFileType('image');
         }
 
-        const fullImageUrl = post.image ? `${CDNURL}${post.image.split('/').pop()}` : '';
+        const fullImageUrl = post.image || '';
         const fullVideoUrl = post.video ? post.video : '';
 
         setFormData({
@@ -405,11 +405,11 @@ export default function UpdatePost() {
               <div className="mt-4">
                 <div className="relative rounded-lg overflow-hidden shadow-md">
                   <img
-                    src={formData.image || preview}
+                    src={preview || formData.image}
                     alt="Preview"
                     className="w-full h-64 object-cover"
                   />
-                  {formData.image && (
+                  {formData.image && !preview && (
                     <div className="absolute bottom-2 right-2">
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                         Uploaded
