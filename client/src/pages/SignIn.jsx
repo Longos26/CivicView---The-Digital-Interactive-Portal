@@ -8,6 +8,7 @@ import {
 } from '../redux/user/userSlice';
 import OAuth from '../components/OAuth';
 import LoadingSpinner from '../components/LoadingSpinner';
+import { motion } from 'framer-motion';
 
 export default function SignIn() {
   const [formData, setFormData] = useState({});
@@ -51,12 +52,12 @@ export default function SignIn() {
         body: JSON.stringify(formData),
       });
       const data = await res.json();
-      
+
       if (data.success === false) {
         dispatch(signInFailure(data.message));
         return;
       }
-      
+
       // Check if the user is approved
       if (data.isApproved === false) {
         dispatch(signInFailure('Your account is pending approval. Please wait for an administrator to approve your account.'));
@@ -72,98 +73,233 @@ export default function SignIn() {
     }
   };
 
+  // Animation variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        duration: 0.5,
+        when: "beforeChildren",
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: { type: "spring", stiffness: 300, damping: 24 }
+    }
+  };
+
+  const floatingCircleVariants = {
+    animate: {
+      y: [0, -15, 0],
+      transition: {
+        duration: 3,
+        repeat: Infinity,
+        repeatType: "reverse",
+        ease: "easeInOut"
+      }
+    }
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 px-4 py-12">
-      <div className="w-full max-w-4xl mx-auto bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden flex flex-col md:flex-row">
+    <motion.div
+      initial="hidden"
+      animate="visible"
+      variants={containerVariants}
+      className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 px-4 py-12"
+    >
+      <motion.div
+        variants={itemVariants}
+        className="w-full max-w-4xl mx-auto bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden flex flex-col md:flex-row"
+      >
         {/* Left Side - Brand */}
-        <div className="md:w-1/2 bg-gradient-to-br from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 p-12 flex flex-col justify-center relative overflow-hidden transition-all duration-300">
-          <div className="absolute -top-24 -left-24 w-64 h-64 rounded-full bg-white/10"></div>
-          <div className="absolute -bottom-24 -right-24 w-64 h-64 rounded-full bg-white/10"></div>
-          
+        <motion.div
+          className="md:w-1/2 bg-gradient-to-br from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 p-12 flex flex-col justify-center relative overflow-hidden transition-all duration-300"
+          initial={{ x: -100, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={{ type: "spring", stiffness: 100, damping: 20 }}
+        >
+          <motion.div
+            className="absolute -top-24 -left-24 w-64 h-64 rounded-full bg-white/10"
+            animate={{
+              scale: [1, 1.1, 1],
+              transition: { duration: 5, repeat: Infinity }
+            }}
+          ></motion.div>
+          <motion.div
+            className="absolute -bottom-24 -right-24 w-64 h-64 rounded-full bg-white/10"
+            animate={{
+              scale: [1, 1.2, 1],
+              transition: { duration: 6, repeat: Infinity, delay: 0.5 }
+            }}
+          ></motion.div>
+
           <div className="relative z-10">
-            <Link to="/" className="inline-block mb-8">
-              {/* Light version of logo for dark background */}
-              <img
-                src="src/3.png"
-                alt="CivicView Logo"
-                className="h-12"
-              />
-            </Link>
-            
-            <h2 className="text-3xl font-bold text-white mb-3">Welcome Back</h2>
-            <p className="text-blue-100 mb-8 max-w-sm">
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ type: "spring", stiffness: 300, delay: 0.2 }}
+            >
+              <Link to="/" className="inline-block mb-8">
+                {/* Light version of logo for dark background */}
+                <img
+                  src="src/3.png"
+                  alt="CivicView Logo"
+                  className="h-12"
+                />
+              </Link>
+            </motion.div>
+
+            <motion.h2
+              variants={itemVariants}
+              className="text-3xl font-bold text-white mb-3"
+            >
+              Welcome Back
+            </motion.h2>
+            <motion.p
+              variants={itemVariants}
+              className="text-blue-100 mb-8 max-w-sm"
+            >
               Access your account to manage your content and stay informed with the latest updates.
-            </p>
-            
-            <div className="flex space-x-4 mt-auto">
-              <span className="w-3 h-3 rounded-full bg-white/30"></span>
-              <span className="w-3 h-3 rounded-full bg-white/60"></span>
-              <span className="w-3 h-3 rounded-full bg-white"></span>
-            </div>
+            </motion.p>
+
+            <motion.div className="flex space-x-4 mt-auto">
+              <motion.span
+                variants={floatingCircleVariants}
+                animate="animate"
+                className="w-3 h-3 rounded-full bg-white/30"
+              ></motion.span>
+              <motion.span
+                variants={floatingCircleVariants}
+                animate="animate"
+                transition={{ delay: 0.5 }}
+                className="w-3 h-3 rounded-full bg-white/60"
+              ></motion.span>
+              <motion.span
+                variants={floatingCircleVariants}
+                animate="animate"
+                transition={{ delay: 1 }}
+                className="w-3 h-3 rounded-full bg-white"
+              ></motion.span>
+            </motion.div>
           </div>
-        </div>
-        
+        </motion.div>
+
         {/* Right Side - Form */}
-        <div className="md:w-1/2 p-8 md:p-12">
-          <div className="mb-8">
-            <h3 className="text-2xl font-bold text-gray-800 dark:text-white">Sign in to your account</h3>
-            <p className="text-gray-500 dark:text-gray-400 mt-2">
+        <motion.div
+          className="md:w-1/2 p-8 md:p-12"
+          initial={{ x: 100, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={{ type: "spring", stiffness: 100, damping: 20, delay: 0.2 }}
+        >
+          <motion.div
+            className="mb-8"
+            variants={itemVariants}
+          >
+            <motion.h3
+              className="text-2xl font-bold text-gray-800 dark:text-white"
+              variants={itemVariants}
+            >
+              Sign in to your account
+            </motion.h3>
+            <motion.p
+              className="text-gray-500 dark:text-gray-400 mt-2"
+              variants={itemVariants}
+            >
               Enter your credentials to access your dashboard
-            </p>
-          </div>
+            </motion.p>
+          </motion.div>
 
           {errorMessage && (
-            <div className="mb-6 p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+            <motion.div
+              className="mb-6 p-4 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ type: "spring", stiffness: 500, damping: 30 }}
+            >
               <p className="text-sm text-red-600 dark:text-red-400 flex items-center">
                 <svg className="w-4 h-4 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                   <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"></path>
                 </svg>
                 {errorMessage}
               </p>
-            </div>
+            </motion.div>
           )}
 
-          <form className="space-y-6" onSubmit={handleSubmit}>
-            <div>
+          <motion.form
+            className="space-y-6"
+            onSubmit={handleSubmit}
+            variants={containerVariants}
+          >
+            <motion.div
+              variants={itemVariants}
+              custom={1}
+            >
               <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Email
               </label>
-              <input
-                type="email"
-                id="email"
-                placeholder="name@company.com"
-                onChange={handleChange}
-                className={`w-full px-4 py-3 rounded-lg border ${
-                  validationErrors.email 
-                    ? 'border-red-500 focus:ring-red-500 focus:border-red-500' 
-                    : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500 focus:border-blue-500'
-                } bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white dark:placeholder-gray-400 focus:outline-none transition duration-200`}
-              />
+              <motion.div
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+              >
+                <input
+                  type="email"
+                  id="email"
+                  placeholder="name@company.com"
+                  onChange={handleChange}
+                  className={`w-full px-4 py-3 rounded-lg border ${
+                    validationErrors.email
+                      ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
+                      : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500 focus:border-blue-500'
+                  } bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white dark:placeholder-gray-400 focus:outline-none transition duration-200`}
+                />
+              </motion.div>
               {validationErrors.email && (
-                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{validationErrors.email}</p>
+                <motion.p
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mt-1 text-sm text-red-600 dark:text-red-400"
+                >
+                  {validationErrors.email}
+                </motion.p>
               )}
-            </div>
-            
-            <div>
+            </motion.div>
+
+            <motion.div
+              variants={itemVariants}
+              custom={2}
+            >
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 Password
               </label>
-              <div className="relative">
+              <motion.div
+                className="relative"
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+              >
                 <input
                   type={formData.showPassword ? "text" : "password"}
                   id="password"
                   placeholder="••••••••"
                   onChange={handleChange}
                   className={`w-full px-4 py-3 rounded-lg border ${
-                    validationErrors.password 
-                      ? 'border-red-500 focus:ring-red-500 focus:border-red-500' 
+                    validationErrors.password
+                      ? 'border-red-500 focus:ring-red-500 focus:border-red-500'
                       : 'border-gray-300 dark:border-gray-600 focus:ring-blue-500 focus:border-blue-500'
                   } bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white dark:placeholder-gray-400 focus:outline-none transition duration-200`}
                 />
-                <button
+                <motion.button
                   type="button"
                   onClick={() => setFormData({ ...formData, showPassword: !formData.showPassword })}
                   className="absolute inset-y-0 right-3 flex items-center text-gray-500 dark:text-gray-400"
+                  whileHover={{ scale: 1.2 }}
+                  whileTap={{ scale: 0.9 }}
                 >
                   {formData.showPassword ? (
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -175,63 +311,101 @@ export default function SignIn() {
                       <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                     </svg>
                   )}
-                </button>
-              </div>
+                </motion.button>
+              </motion.div>
               {validationErrors.password && (
-                <p className="mt-1 text-sm text-red-600 dark:text-red-400">{validationErrors.password}</p>
+                <motion.p
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mt-1 text-sm text-red-600 dark:text-red-400"
+                >
+                  {validationErrors.password}
+                </motion.p>
               )}
-            </div>
-            
-            <div className="flex items-center justify-between">
+            </motion.div>
+
+            <motion.div
+              className="flex items-center justify-between"
+              variants={itemVariants}
+              custom={3}
+            >
               <div className="flex items-center">
-                <input
+                <motion.input
                   id="remember"
                   type="checkbox"
                   className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 dark:bg-gray-700 dark:border-gray-600"
+                  whileHover={{ scale: 1.2 }}
+                  whileTap={{ scale: 0.9 }}
                 />
                 <label htmlFor="remember" className="ml-2 text-sm text-gray-600 dark:text-gray-300">
                   Remember me
                 </label>
               </div>
-            </div>
-            
-            <button
+            </motion.div>
+
+            <motion.button
               type="submit"
               disabled={loading}
               className="w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium rounded-lg transition duration-300 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+              variants={itemVariants}
+              custom={4}
+              whileHover={{ scale: 1.03, boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)" }}
+              whileTap={{ scale: 0.97 }}
             >
               {loading ? (
-                <div className="flex items-center justify-center">
+                <motion.div
+                  className="flex items-center justify-center"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                >
                   <LoadingSpinner size="sm" color="white" />
                   <span className="pl-3">Signing in...</span>
-                </div>
+                </motion.div>
               ) : (
                 'Sign In'
               )}
-            </button>
-            
-            <div className="relative flex items-center justify-center">
+            </motion.button>
+
+            <motion.div
+              className="relative flex items-center justify-center"
+              variants={itemVariants}
+              custom={5}
+            >
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-gray-300 dark:border-gray-600"></div>
               </div>
               <div className="relative flex justify-center text-sm">
                 <span className="px-2 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400">Or continue with</span>
               </div>
-            </div>
-            
-            <div>
+            </motion.div>
+
+            <motion.div
+              variants={itemVariants}
+              custom={6}
+            >
               <OAuth />
-            </div>
-          </form>
-          
-          <p className="mt-8 text-center text-sm text-gray-600 dark:text-gray-400">
+            </motion.div>
+          </motion.form>
+
+          <motion.p
+            className="mt-8 text-center text-sm text-gray-600 dark:text-gray-400"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.8 }}
+          >
             Don't have an account?{' '}
-            <Link to="/sign-up" className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors">
-              Sign up here
-            </Link>
-          </p>
-        </div>
-      </div>
-    </div>
+            <motion.span
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="inline-block"
+            >
+              <Link to="/sign-up" className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors">
+                Sign up here
+              </Link>
+            </motion.span>
+          </motion.p>
+        </motion.div>
+      </motion.div>
+    </motion.div>
   );
 }
