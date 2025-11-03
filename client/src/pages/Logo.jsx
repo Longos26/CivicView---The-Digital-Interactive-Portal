@@ -74,7 +74,7 @@ export default function Logo({ className = '' }) {
           {/* Edit button (only visible for admins) */}
           {canEdit && (
             <Link 
-              to="/dashboard?tab=logo" 
+              to="/dashboard?tab=createlogo" 
               className={`absolute -top-3 -right-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300
                 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 p-1.5 rounded-full hover:scale-110`}
             >

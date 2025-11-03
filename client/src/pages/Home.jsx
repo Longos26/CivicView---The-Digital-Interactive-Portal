@@ -96,14 +96,14 @@ export default function KioskHome() {
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-800 text-gray-800 dark:text-white p-6">
+   <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-gray-900 dark:via-gray-800 dark:to-indigo-900">
       <motion.div 
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
         className="max-w-7xl mx-auto mb-8"
       >
-        <h1 className="text-3xl font-bold text-center mb-8 text-gray-800 dark:text-white">
+        <h1 className="text-4xl md:text-5xl font-bold  text-center bg-gradient-to-r from-indigo-600 via-purple-600 to-blue-600 bg-clip-text text-transparent mb-4">
           {selectedCategory
             ? `${categories.find(cat => cat._id === selectedCategory)?.name || 'Category'} Content`
             : 'Featured Content'}

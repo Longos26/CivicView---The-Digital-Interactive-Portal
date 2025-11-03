@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import PostCard from '../components/PostCard';
 import LoadingSpinner from '../components/LoadingSpinner';
-import { HiOutlineChevronLeft, HiOutlineChevronRight } from 'react-icons/hi';
+import { HiOutlineChevronLeft, HiOutlineChevronRight, HiOutlineSearch, HiOutlineFilter, HiOutlineX } from 'react-icons/hi';
 
 // Constants
 const ITEMS_PER_PAGE = 6;
@@ -38,13 +38,12 @@ export default function Search() {
         const res = await fetch('/api/category');
         const data = await res.json();
         if (res.ok) {
-          // Format categories for dropdown
           const formattedCategories = data.map(cat => ({
-            value: cat._id, // Use category ID instead of name
+            value: cat._id,
             label: cat.name
           }));
           setCategories([
-            { value: '', label: 'All Categories' }, // Empty value for all categories
+            { value: '', label: 'All Categories' },
             ...formattedCategories
           ]);
         } else {
@@ -52,7 +51,6 @@ export default function Search() {
         }
       } catch (err) {
         console.error('Failed to fetch categories:', err);
-        // Fallback if API fails
         setCategories([
           { value: '', label: 'All Categories' },
           { value: 'uncategorized', label: 'Uncategorized' }
@@ -69,7 +67,6 @@ export default function Search() {
     const categoryFromUrl = urlParams.get('category');
     
     setSearchParams({
-      ...searchParams,
       searchTerm: searchTermFromUrl || '',
       sort: sortFromUrl || 'desc',
       category: categoryFromUrl || '',
@@ -105,7 +102,7 @@ export default function Search() {
       ...prev, 
       [id]: value 
     }));
-    setCurrentPage(1); // Reset to first page when filters change
+    setCurrentPage(1);
   };
 
   const handleShowMore = async () => {
@@ -145,129 +142,161 @@ export default function Search() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const clearFilters = () => {
+    setSearchParams({
+      searchTerm: '',
+      sort: 'desc',
+      category: '',
+    });
+    setCurrentPage(1);
+  };
+
   return (
-    <div className="max-w-screen-xl mx-auto px-4 py-8 dark:bg-gray-900 dark:text-gray-200">
+    <div className="min-h-screen max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 transition-colors duration-300">
       {/* Header with Search Bar */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-6 dark:text-gray-200">Search Posts</h1>
-        <div className="flex flex-col md:flex-row gap-4">
+      <header className="mb-12">
+        <h1 className="text-4xl font-bold text-gray-900 dark:text-white tracking-tight mb-6">
+          Discover <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-purple-600">Inspiration</span>
+        </h1>
+        <div className="flex flex-col sm:flex-row gap-4">
           <div className="relative flex-grow">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <HiOutlineSearch className="h-5 w-5 text-gray-400 dark:text-gray-500" />
+            </div>
             <input
               type="text"
               id="searchTerm"
-              placeholder="Search for posts..."
+              placeholder="Search posts, topics, or keywords..."
               value={searchParams.searchTerm}
               onChange={handleChange}
-              className="w-full py-3 px-4 pr-10 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-transparent shadow-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
+              className="w-full py-3 pl-10 pr-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-sm transition-all duration-200 ease-in-out placeholder-gray-400 dark:placeholder-gray-500"
             />
-            <svg 
-              className="absolute right-3 top-3.5 h-5 w-5 text-gray-400" 
-              xmlns="http://www.w3.org/2000/svg" 
-              fill="none" 
-              viewBox="0 0 24 24" 
-              stroke="currentColor"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
+            {searchParams.searchTerm && (
+              <button 
+                onClick={() => setSearchParams(prev => ({...prev, searchTerm: ''}))}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center"
+              >
+                <HiOutlineX className="h-5 w-5 text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 transition-colors" />
+              </button>
+            )}
           </div>
           <button 
             onClick={toggleFilters}
-            className="flex items-center justify-center gap-2 py-3 px-4 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium transition duration-200 dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-gray-200"
+            className={`flex items-center justify-center gap-2 py-3 px-6 rounded-xl font-medium transition-all duration-200 ${
+              isFilterOpen 
+                ? 'bg-indigo-600 text-white' 
+                : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'
+            }`}
           >
-            <svg className="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-            </svg>
+            <HiOutlineFilter className="w-5 h-5" />
             Filters
           </button>
         </div>
-      </div>
+      </header>
 
       {/* Filter Section */}
-      <div className={`bg-white rounded-lg shadow-md p-6 mb-8 transition-all duration-300 dark:bg-gray-800 ${isFilterOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0 hidden md:block overflow-hidden'}`}>
-        <div className="grid md:grid-cols-2 gap-6">
+      <div className={`bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 mb-8 transition-all duration-300 ease-in-out overflow-hidden ${
+        isFilterOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0 p-0 border-0'
+      }`}>
+        <div className="grid md:grid-cols-2 gap-8">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-gray-200">Sort By</label>
-            <div className="flex gap-4">
-              <label className={`flex items-center cursor-pointer p-3 rounded-lg border ${searchParams.sort === 'desc' ? 'border-teal-500 bg-teal-50 text-teal-700' : 'border-gray-300 hover:bg-gray-50'} dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-gray-200`}>
-                <input
-                  type="radio"
-                  name="sort"
-                  id="sort-desc"
-                  value="desc"
-                  checked={searchParams.sort === 'desc'}
-                  onChange={handleChange}
-                  className="sr-only"
-                />
-                <svg className="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">Sort Options</h3>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setSearchParams(prev => ({...prev, sort: 'desc'}))}
+                className={`px-4 py-2.5 rounded-lg flex items-center gap-2 transition-all ${
+                  searchParams.sort === 'desc'
+                    ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-800'
+                    : 'bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600'
+                }`}
+              >
+                <svg className="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
                 </svg>
                 Latest
-              </label>
-              <label className={`flex items-center cursor-pointer p-3 rounded-lg border ${searchParams.sort === 'asc' ? 'border-teal-500 bg-teal-50 text-teal-700' : 'border-gray-300 hover:bg-gray-50'} dark:border-gray-700 dark:bg-gray-800 dark:hover:bg-gray-700 dark:text-gray-200`}>
-                <input
-                  type="radio"
-                  name="sort"
-                  id="sort"
-                  value="asc"
-                  checked={searchParams.sort === 'asc'}
-                  onChange={handleChange}
-                  className="sr-only"
-                />
-                <svg className="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              </button>
+              <button
+                onClick={() => setSearchParams(prev => ({...prev, sort: 'asc'}))}
+                className={`px-4 py-2.5 rounded-lg flex items-center gap-2 transition-all ${
+                  searchParams.sort === 'asc'
+                    ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border border-indigo-100 dark:border-indigo-800'
+                    : 'bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600'
+                }`}
+              >
+                <svg className="w-5 h-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h9m5-4v12m0 0l-4-4m4 4l4-4" />
                 </svg>
                 Oldest
-              </label>
+              </button>
             </div>
           </div>
           
           <div>
-            <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-2">Category</label>
-            <select
-              id="category"
-              value={searchParams.category}
-              onChange={handleChange}
-              className="w-full p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-teal-500 focus:border-transparent shadow-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
-            >
-              {categories.map(cat => (
-                <option key={cat.value} value={cat.value}>{cat.label}</option>
-              ))}
-            </select>
+            <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-4">Filter By</h3>
+            <div className="relative">
+              <select
+                id="category"
+                value={searchParams.category}
+                onChange={handleChange}
+                className="appearance-none w-full p-2.5 pl-4 pr-10 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent shadow-sm transition-all"
+              >
+                {categories.map(cat => (
+                  <option key={cat.value} value={cat.value}>{cat.label}</option>
+                ))}
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                <svg className="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </div>
+            </div>
           </div>
+        </div>
+        <div className="mt-6 flex justify-end">
+          <button 
+            onClick={clearFilters}
+            className="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 font-medium transition-colors"
+          >
+            Reset all filters
+          </button>
         </div>
       </div>
 
       {/* Results Section */}
-      <div className="bg-white rounded-lg shadow-md overflow-hidden dark:bg-gray-800">
-        <div className="border-b border-gray-200 p-6 dark:border-gray-700">
-          <h2 className="text-xl font-semibold text-gray-800 flex items-center dark:text-gray-200">
-            Search Results
-            {!loading && posts.length > 0 && (
-              <span className="ml-2 text-sm bg-gray-100 text-gray-600 py-1 px-2 rounded-full dark:bg-gray-700 dark:text-gray-300">
-                {totalPosts} posts
-              </span>
-            )}
+      <section className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden">
+        <div className="border-b border-gray-200 dark:border-gray-700 p-6 flex items-center justify-between">
+          <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
+            {searchParams.searchTerm ? `Results for "${searchParams.searchTerm}"` : 'All Posts'}
           </h2>
+          {!loading && posts.length > 0 && (
+            <span className="text-sm bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 py-1 px-3 rounded-full">
+              {totalPosts} {totalPosts === 1 ? 'post' : 'posts'}
+            </span>
+          )}
         </div>
 
         {loading ? (
-          <div className="flex items-center justify-center p-12">
-            <LoadingSpinner size="lg" color="primary" />
+          <div className="flex items-center justify-center p-16">
+            <LoadingSpinner size="lg" color="indigo" />
           </div>
         ) : posts.length === 0 ? (
-          <div className="flex flex-col items-center justify-center p-12 text-center">
-            <svg className="w-16 h-16 text-gray-400 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <p className="text-gray-500 text-lg dark:text-gray-400">No posts found matching your search criteria.</p>
+          <div className="flex flex-col items-center justify-center p-16 text-center">
+            <div className="w-24 h-24 bg-indigo-50 dark:bg-indigo-900/20 rounded-full flex items-center justify-center mb-6">
+              <HiOutlineSearch className="w-12 h-12 text-indigo-400 dark:text-indigo-500" />
+            </div>
+            <h3 className="text-xl font-medium text-gray-700 dark:text-gray-300 mb-2">No results found</h3>
+            <p className="text-gray-500 dark:text-gray-400 max-w-md">
+              {searchParams.searchTerm 
+                ? `We couldn't find any posts matching "${searchParams.searchTerm}"`
+                : 'There are currently no posts available'}
+            </p>
             <button 
-              onClick={() => setSearchParams({searchTerm: '', sort: 'desc', category: 'uncategorized'})}
-              className="mt-4 text-teal-600 hover:text-teal-800 font-medium dark:text-teal-500 dark:hover:text-teal-400"
+              onClick={clearFilters}
+              className="mt-6 px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors duration-200"
             >
-              Clear filters
+              Clear search
             </button>
           </div>
-          
         ) : (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
@@ -278,104 +307,107 @@ export default function Search() {
             
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
+              <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="flex-1 flex justify-between sm:hidden">
                   <button
                     onClick={() => paginate(Math.max(1, currentPage - 1))}
                     disabled={currentPage === 1}
-                    className={`relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md ${
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                       currentPage === 1 
-                        ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed' 
-                        : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'
+                        ? 'text-gray-400 dark:text-gray-500 cursor-not-allowed' 
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                     }`}
                   >
+                    <HiOutlineChevronLeft className="h-5 w-5" />
                     Previous
                   </button>
                   <button
                     onClick={() => paginate(Math.min(totalPages, currentPage + 1))}
                     disabled={currentPage === totalPages}
-                    className={`ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md ${
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                       currentPage === totalPages 
-                        ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed' 
-                        : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'
+                        ? 'text-gray-400 dark:text-gray-500 cursor-not-allowed' 
+                        : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                     }`}
                   >
                     Next
+                    <HiOutlineChevronRight className="h-5 w-5" />
                   </button>
                 </div>
-                <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-                  <div>
-                    <p className="text-sm text-gray-700 dark:text-gray-300">
-                      Showing <span className="font-medium">{indexOfFirstPost + 1}</span> to{' '}
-                      <span className="font-medium">
-                        {Math.min(indexOfLastPost, totalPosts)}
-                      </span> of{' '}
-                      <span className="font-medium">{totalPosts}</span> results
-                    </p>
-                  </div>
-                  <div>
-                    <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                      <button
-                        onClick={() => paginate(Math.max(1, currentPage - 1))}
-                        disabled={currentPage === 1}
-                        className={`relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium ${
-                          currentPage === 1 
-                            ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed' 
-                            : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
-                        }`}
-                      >
-                        <span className="sr-only">Previous</span>
-                        <HiOutlineChevronLeft className="h-5 w-5" aria-hidden="true" />
-                      </button>
+                <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                  <p className="text-sm text-gray-600 dark:text-gray-300">
+                    Showing <span className="font-semibold">{indexOfFirstPost + 1}</span> to{' '}
+                    <span className="font-semibold">{Math.min(indexOfLastPost, totalPosts)}</span> of{' '}
+                    <span className="font-semibold">{totalPosts}</span> results
+                  </p>
+                  <nav className="flex items-center gap-2" aria-label="Pagination">
+                    <button
+                      onClick={() => paginate(Math.max(1, currentPage - 1))}
+                      disabled={currentPage === 1}
+                      className={`p-2 rounded-lg transition-all ${
+                        currentPage === 1 
+                          ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed' 
+                          : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                      }`}
+                    >
+                      <HiOutlineChevronLeft className="h-5 w-5" aria-hidden="true" />
+                    </button>
+                    
+                    <div className="flex gap-1">
                       {Array.from({ length: totalPages }, (_, i) => i + 1).map((number) => (
                         <button
                           key={number}
                           onClick={() => paginate(number)}
-                          className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                          className={`w-10 h-10 rounded-lg flex items-center justify-center text-sm font-medium transition-all ${
                             currentPage === number
-                              ? 'z-10 bg-teal-50 dark:bg-teal-900/30 border-teal-500 text-teal-600 dark:text-teal-400'
-                              : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+                              ? 'bg-indigo-600 text-white'
+                              : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                           }`}
                         >
                           {number}
                         </button>
                       ))}
-                      <button
-                        onClick={() => paginate(Math.min(totalPages, currentPage + 1))}
-                        disabled={currentPage === totalPages}
-                        className={`relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium ${
-                          currentPage === totalPages 
-                            ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed' 
-                            : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
-                        }`}
-                      >
-                        <span className="sr-only">Next</span>
-                        <HiOutlineChevronRight className="h-5 w-5" aria-hidden="true" />
-                      </button>
-                    </nav>
-                  </div>
+                    </div>
+                    
+                    <button
+                      onClick={() => paginate(Math.min(totalPages, currentPage + 1))}
+                      disabled={currentPage === totalPages}
+                      className={`p-2 rounded-lg transition-all ${
+                        currentPage === totalPages 
+                          ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed' 
+                          : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
+                      }`}
+                    >
+                      <HiOutlineChevronRight className="h-5 w-5" aria-hidden="true" />
+                    </button>
+                  </nav>
                 </div>
               </div>
             )}
 
             {showMore && (
-              <div className="flex justify-center mt-8">
+              <div className="flex justify-center py-8">
                 <button 
                   onClick={handleShowMore}
-                  className="px-6 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-full text-gray-700 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-300 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900"
+                  className="px-6 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-indigo-600 dark:text-indigo-400 font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-300 flex items-center gap-2"
                 >
                   {loading ? (
-                    <div className="flex items-center justify-center">
-                      <LoadingSpinner size="sm" color="primary" />
-                      <span className="ml-2">Loading...</span>
-                    </div>
-                  ) : 'Show more posts'}
+                    <>
+                      <LoadingSpinner size="sm" color="indigo" />
+                      <span>Loading...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Show more</span>
+                      <HiOutlineChevronDown className="h-5 w-5" />
+                    </>
+                  )}
                 </button>
               </div>
             )}
           </>
         )}
-      </div>
+      </section>
     </div>
   );
 }

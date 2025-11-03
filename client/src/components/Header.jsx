@@ -7,6 +7,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { toggleTheme } from '../redux/theme/themeSlice';
 import { signoutSuccess } from '../redux/user/userSlice';
 import Logo from '../pages/Logo';
+import { FaGear } from 'react-icons/fa6';
 
 export const SidebarContext = createContext();
 
@@ -108,6 +109,13 @@ export default function Header() {
                 <FaQuestionCircle size={16} />
               </div>
               <span className="font-medium">FAQs</span>
+              <div className="ml-auto w-1.5 h-1.5 rounded-full bg-current opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            </Link>
+            <Link to="/services" className={navLinkClass('/services')}>
+              <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-white/10">
+                <FaGear size={16} />
+              </div>
+              <span className="font-medium">Services</span>
               <div className="ml-auto w-1.5 h-1.5 rounded-full bg-current opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             </Link>
           </div>

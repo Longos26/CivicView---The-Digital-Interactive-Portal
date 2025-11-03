@@ -331,7 +331,7 @@ export default function DashPosts() {
       <div className="flex justify-between items-center mb-6 bg-gray-50 dark:bg-gray-800/50 rounded-xl p-6">
         <h2 className="text-2xl font-semibold text-gray-700 dark:text-gray-200 flex items-center gap-3">
           <HiDocumentText className="w-8 h-8 text-teal-400 dark:text-teal-500"/>
-          Post Management
+          Content Management
         </h2>
         <div className="mt-3 md:mt-0 flex items-center text-sm text-gray-500 dark:text-gray-400">
           <Clock className="h-4 w-4 mr-2" />

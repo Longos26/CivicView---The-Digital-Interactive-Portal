@@ -89,6 +89,12 @@ export default function CreatePost() {
       return;
     }
 
+    // Check if image is uploaded
+    if (!formData.image && !formData.video) {
+      setPublishError('Please upload an image or video before publishing');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const res = await fetch('/api/post/create', {
@@ -218,7 +224,7 @@ export default function CreatePost() {
           <svg className="w-8 h-8 text-teal-400 dark:text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
           </svg>
-          Create Post
+          Create Content
         </h1>
         <div className="mt-3 md:mt-0 flex items-center text-sm text-gray-500 dark:text-gray-400">
           <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -451,7 +457,7 @@ export default function CreatePost() {
                 <span className="ml-2">Publishing...</span>
               </div>
             ) : (
-              'Publish Post'
+              'Publish'
             )}
           </button>
         </div>
