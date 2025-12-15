@@ -218,7 +218,7 @@ export default function CreatePost() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="max-w-4xl mx-auto"
+        className="max-w-7xl mx-auto"
       >
         <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-3xl shadow-xl overflow-hidden border border-slate-200 dark:border-slate-700">
 

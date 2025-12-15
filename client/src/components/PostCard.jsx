@@ -37,7 +37,7 @@ export default function PostCard({ post }) {
         // Fetch category details from the API
         const response = await fetch(`/api/category/${categoryId}`);
         const data = await response.json();
-        
+
         if (response.ok && data) {
           setCategoryName(data.name);
         } else {
