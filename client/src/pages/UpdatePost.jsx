@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import supabase, { CDNURL } from '../supabase';
-import { v4 as uuidv4 } from 'uuid';
+
 import RichTextEditor from '../components/RichTextEditor';
 import LoadingSpinner from '../components/LoadingSpinner';
 
@@ -171,27 +170,25 @@ export default function UpdatePost() {
     setMediaUploadError(null);
 
     try {
-      const fileName = `${uuidv4()}-${file.name}`;
-      const folderPath = fileType === 'image' ? 'images/' : 'videos/';
-      const filePath = folderPath + fileName;
+      const formData = new FormData();
+      formData.append('file', file);
 
-      // Upload file to Supabase storage
-      const { data, error } = await supabase.storage
-        .from('passportinteractiveboard')
-        .upload(filePath, file);
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
 
-      if (error) {
-        throw new Error(error.message);
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || 'Upload failed');
       }
-
-      // Construct public URL
-      const mediaUrl = `${CDNURL}${filePath}`;
 
       // Update the appropriate field based on file type
       if (fileType === 'image') {
-        setFormData(prev => ({ ...prev, image: mediaUrl }));
+        setFormData(prev => ({ ...prev, image: data.url }));
       } else {
-        setFormData(prev => ({ ...prev, video: mediaUrl }));
+        setFormData(prev => ({ ...prev, video: data.url }));
       }
     } catch (error) {
       console.error('Upload failed:', error);
@@ -310,7 +307,7 @@ export default function UpdatePost() {
             <div className="mt-2 flex items-center">
               <span className="text-sm text-gray-500 dark:text-gray-400">
                 {isLoadingCategories ? 'Loading categories...' :
-                 categories.length === 0 && !categoryError ? 'No categories available. Please create one first.' : ''}
+                  categories.length === 0 && !categoryError ? 'No categories available. Please create one first.' : ''}
               </span>
 
             </div>
@@ -327,22 +324,20 @@ export default function UpdatePost() {
                 <button
                   type="button"
                   onClick={() => handleMediaTypeChange('image')}
-                  className={`py-2 px-4 mr-2 ${
-                    fileType === 'image' || fileType === null
+                  className={`py-2 px-4 mr-2 ${fileType === 'image' || fileType === null
                       ? 'border-b-2 border-blue-500 text-blue-600 font-medium'
                       : 'text-gray-500 hover:text-gray-700'
-                  }`}
+                    }`}
                 >
                   Upload Image
                 </button>
                 <button
                   type="button"
                   onClick={() => handleMediaTypeChange('video')}
-                  className={`py-2 px-4 ${
-                    fileType === 'video'
+                  className={`py-2 px-4 ${fileType === 'video'
                       ? 'border-b-2 border-blue-500 text-blue-600 font-medium'
                       : 'text-gray-500 hover:text-gray-700'
-                  }`}
+                    }`}
                 >
                   Upload Video
                 </button>
@@ -374,11 +369,10 @@ export default function UpdatePost() {
                   type="button"
                   onClick={handleUploadMedia}
                   disabled={uploading || !file}
-                  className={`px-4 py-2 rounded-lg transition-colors ${
-                    uploading || !file
+                  className={`px-4 py-2 rounded-lg transition-colors ${uploading || !file
                       ? 'bg-gray-300 cursor-not-allowed text-gray-500'
                       : 'bg-blue-600 hover:bg-blue-700 text-white'
-                  }`}
+                    }`}
                 >
                   {uploading ? (
                     <div className="flex items-center">
@@ -464,11 +458,10 @@ export default function UpdatePost() {
             <button
               type="submit"
               disabled={isSubmitting}
-              className={`w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white ${
-                isSubmitting
+              className={`w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white ${isSubmitting
                   ? 'bg-blue-400 cursor-not-allowed'
                   : 'bg-gradient-to-r from-teal-400 to-blue-500 hover:from-teal-500 hover:to-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
-              }`}
+                }`}
             >
               {isSubmitting ? (
                 <div className="flex items-center">

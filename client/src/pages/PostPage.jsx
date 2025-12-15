@@ -3,6 +3,7 @@ import { Link, useParams, useNavigate } from 'react-router-dom';
 import { HiArrowLeft, HiOutlineShare, HiOutlineHeart, HiOutlineChat, HiOutlineClock, HiOutlineCalendar } from 'react-icons/hi';
 import LoadingSpinner from '../components/LoadingSpinner';
 import CommentSection from '../components/CommentSection';
+import CanvasRenderer from '../components/CanvasRenderer';
 import FeedbackForm from '../components/FeedbackForm';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { useSelector } from 'react-redux';
@@ -21,6 +22,14 @@ export default function PostPage() {
   // Header background opacity based on scroll
   const headerOpacity = useTransform(scrollY, [0, 100], [0, 1]);
   const headerY = useTransform(scrollY, [0, 100], [-20, 0]);
+
+  const headerBg = useTransform(
+    scrollY,
+    [0, 100],
+    ['rgba(255, 255, 255, 0)', 'rgba(255, 255, 255, 0.8)']
+  );
+
+  const headerBackdrop = useTransform(scrollY, [0, 100], ['blur(0px)', 'blur(12px)']);
 
   // Fetch post data
   useEffect(() => {
@@ -142,22 +151,27 @@ export default function PostPage() {
     );
   }
 
+
+
   return (
     <main className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-300">
       {/* Sticky Header */}
       <motion.div
         className="fixed top-0 left-0 right-0 z-50 h-16 flex items-center justify-between px-4 md:px-8"
-        style={{ backgroundColor: `rgba(255, 255, 255, ${headerOpacity.get() * 0.8})`, backdropFilter: `blur(${headerOpacity.get() * 12}px)` }}
+        style={{ backgroundColor: headerBg, backdropFilter: headerBackdrop }}
       >
-        <div className="absolute inset-0 bg-white/70 dark:bg-slate-900/80 backdrop-blur-xl opacity-0" style={{ opacity: headerOpacity }} />
+        <motion.div
+          className="absolute inset-0 bg-white/70 dark:bg-slate-900/80 backdrop-blur-xl"
+          style={{ opacity: headerOpacity }}
+        />
 
         <div className="relative z-10 flex items-center gap-4 w-full max-w-7xl mx-auto">
-          <button
-            onClick={() => navigate(-1)}
-            className="p-2 rounded-full bg-white/50 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 transition-all shadow-sm backdrop-blur-md"
+          <Link
+            to="/"
+            className="p-2.5 rounded-full bg-white/50 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 transition-all shadow-sm backdrop-blur-md z-50 flex items-center justify-center"
           >
-            <HiArrowLeft className="w-5 h-5" />
-          </button>
+            <HiArrowLeft className="text-xl" />
+          </Link>
 
           <motion.h1
             className="text-lg font-bold text-slate-800 dark:text-white truncate opacity-0"
@@ -255,10 +269,7 @@ export default function PostPage() {
 
           {/* Article Text */}
           <div className="p-6 md:p-12">
-            <div
-              className="prose prose-lg max-w-none dark:prose-invert prose-headings:font-bold prose-a:text-indigo-600 hover:prose-a:text-indigo-500 prose-img:rounded-2xl prose-img:shadow-lg"
-              dangerouslySetInnerHTML={{ __html: post.content }}
-            />
+            <CanvasRenderer content={post.content} />
           </div>
 
           {/* Engagement Bar */}

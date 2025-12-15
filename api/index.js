@@ -11,6 +11,7 @@ import feedbackRoutes from './routes/feedback.route.js';
 import faqsRoutes from './routes/faqs.route.js';
 import logoRoutes from './routes/logo.route.js';
 import serviceRoutes from './routes/service.route.js';
+import uploadRoutes from './routes/upload.route.js';
 import cookieParser from 'cookie-parser';
 import path from 'path';
 
@@ -42,6 +43,10 @@ app.use('/api/feedback', feedbackRoutes);
 app.use('/api/logo', logoRoutes);
 app.use('/api/faqs', faqsRoutes);
 app.use('/api/service', serviceRoutes);
+app.use('/api/upload', uploadRoutes);
+
+// Serve uploaded files
+app.use('/api/uploads', express.static(path.join(__dirname, 'api/uploads')));
 
 
 

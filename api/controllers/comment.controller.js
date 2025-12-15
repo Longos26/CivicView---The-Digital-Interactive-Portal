@@ -1,4 +1,5 @@
 import Comment from '../models/comment.model.js';
+import User from '../models/user.model.js';
 import { errorHandler } from '../utils/error.js'; // I'm assuming you have this imported elsewhere
 
 export const createComment = async (req, res, next) => {
@@ -22,18 +23,18 @@ export const createComment = async (req, res, next) => {
     if (parentId) {
       // Find the parent comment
       const parentComment = await Comment.findById(parentId);
-      
+
       if (!parentComment) {
         return next(errorHandler(404, 'Parent comment not found'));
       }
-      
+
       // Set reply-specific fields
       newComment.parentId = parentId;
       newComment.isReply = true;
-      
+
       // Save the reply
       await newComment.save();
-      
+
       // Update the parent comment's replies array and replyCount
       parentComment.replies.push(newComment._id);
       parentComment.replyCount += 1;
@@ -52,14 +53,34 @@ export const createComment = async (req, res, next) => {
 export const getPostComments = async (req, res, next) => {
   try {
     // Get top-level comments (not replies) for the post
-    const comments = await Comment.find({ 
+    const comments = await Comment.find({
       postId: req.params.postId,
-      isReply: false 
+      isReply: false
     }).sort({
       createdAt: -1,
     });
-    
-    res.status(200).json(comments);
+
+    const commentsWithUser = await Promise.all(
+      comments.map(async (comment) => {
+        const user = await User.findById(comment.userId);
+        return {
+          ...comment._doc,
+          user: user
+            ? {
+              _id: user._id,
+              username: user.username,
+              profilePicture: user.profilePicture,
+              isAdmin: user.isAdmin,
+            }
+            : {
+              username: 'Unknown User',
+              profilePicture: '/default-avatar.png',
+            },
+        };
+      })
+    );
+
+    res.status(200).json(commentsWithUser);
   } catch (error) {
     next(error);
   }
@@ -68,21 +89,41 @@ export const getPostComments = async (req, res, next) => {
 export const getReplies = async (req, res, next) => {
   try {
     const parentComment = await Comment.findById(req.params.commentId);
-    
+
     if (!parentComment) {
       return next(errorHandler(404, 'Comment not found'));
     }
-    
+
     // If the parent comment has replies
     if (parentComment.replyCount > 0) {
       // Find all reply comments where parentId equals the comment ID
-      const replies = await Comment.find({ 
-        parentId: req.params.commentId 
+      const replies = await Comment.find({
+        parentId: req.params.commentId
       }).sort({
         createdAt: -1,
       });
-      
-      res.status(200).json(replies);
+
+      const repliesWithUser = await Promise.all(
+        replies.map(async (reply) => {
+          const user = await User.findById(reply.userId);
+          return {
+            ...reply._doc,
+            user: user
+              ? {
+                _id: user._id,
+                username: user.username,
+                profilePicture: user.profilePicture,
+                isAdmin: user.isAdmin,
+              }
+              : {
+                username: 'Unknown User',
+                profilePicture: '/default-avatar.png',
+              },
+          };
+        })
+      );
+
+      res.status(200).json(repliesWithUser);
     } else {
       res.status(200).json([]);
     }
@@ -153,7 +194,7 @@ export const deleteComment = async (req, res, next) => {
     if (!comment.isReply && comment.replyCount > 0) {
       await Comment.deleteMany({ parentId: req.params.commentId });
     }
-    
+
     // If this is a reply, update the parent comment's replies array and replyCount
     if (comment.isReply && comment.parentId) {
       const parentComment = await Comment.findById(comment.parentId);
@@ -167,10 +208,10 @@ export const deleteComment = async (req, res, next) => {
         }
       }
     }
-    
+
     // Delete the comment itself
     await Comment.findByIdAndDelete(req.params.commentId);
-    
+
     res.status(200).json('Comment has been deleted');
   } catch (error) {
     next(error);

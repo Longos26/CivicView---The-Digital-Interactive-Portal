@@ -1,12 +1,12 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
-import { 
-  HiOutlineExclamationCircle, 
-  HiOutlinePencil, 
-  HiOutlineTrash, 
-  HiOutlinePhotograph, 
-  HiOutlineTag, 
+import {
+  HiOutlineExclamationCircle,
+  HiOutlinePencil,
+  HiOutlineTrash,
+  HiOutlinePhotograph,
+  HiOutlineTag,
   HiDocumentText,
   HiOutlineSearch,
   HiOutlineChevronLeft,
@@ -30,16 +30,16 @@ const PostCard = ({ post, index, onDeleteClick, categoryName }) => (
   >
     <Link to={`/post/${post.slug}`} className="block relative group">
       <div className="relative h-48 overflow-hidden">
-        <img 
-          src={post.image} 
-          alt={post.title} 
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
+        <img
+          src={post.image}
+          alt={post.title}
+          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           loading="lazy" // Add lazy loading for performance
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
       </div>
     </Link>
-    
+
     <div className="p-5">
       <div className="flex items-center space-x-2 mb-3">
         <span className="bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200 text-xs font-medium px-2.5 py-0.5 rounded-full flex items-center">
@@ -47,13 +47,13 @@ const PostCard = ({ post, index, onDeleteClick, categoryName }) => (
           {categoryName}
         </span>
       </div>
-      
+
       <Link to={`/post/${post.slug}`}>
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 line-clamp-2 hover:text-teal-600 dark:hover:text-teal-400 transition-colors">
           {post.title}
         </h3>
       </Link>
-      
+
       <div className="flex items-center justify-between mt-5">
         <button
           onClick={() => onDeleteClick(post._id)}
@@ -62,8 +62,8 @@ const PostCard = ({ post, index, onDeleteClick, categoryName }) => (
           <HiOutlineTrash className="w-5 h-5 mr-1" />
           <span className="text-sm font-medium">Delete</span>
         </button>
-        
-        <Link 
+
+        <Link
           to={`/dashboard?tab=updatepost&postId=${post._id}`}
           className="text-gray-500 hover:text-teal-600 dark:text-gray-400 dark:hover:text-teal-400 flex items-center transition-colors duration-300"
         >
@@ -80,11 +80,11 @@ const DeleteModal = ({ isOpen, onClose, onConfirm, isLoading }) => (
   <AnimatePresence>
     {isOpen && (
       <>
-        <div 
+        <div
           className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
           onClick={onClose}
         />
-        
+
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
@@ -99,15 +99,15 @@ const DeleteModal = ({ isOpen, onClose, onConfirm, isLoading }) => (
                   <HiOutlineExclamationCircle className="h-10 w-10 text-red-600 dark:text-red-500" />
                 </div>
               </div>
-              
+
               <h3 className="text-center text-lg font-medium text-gray-900 dark:text-white mb-4">
                 Delete Post
               </h3>
-              
+
               <p className="text-center text-gray-500 dark:text-gray-400 mb-6">
                 Are you sure you want to delete this post? This action cannot be undone.
               </p>
-              
+
               <div className="flex gap-3 justify-center">
                 <button
                   onClick={onClose}
@@ -115,7 +115,7 @@ const DeleteModal = ({ isOpen, onClose, onConfirm, isLoading }) => (
                 >
                   Cancel
                 </button>
-                
+
                 <button
                   onClick={onConfirm}
                   className="flex-1 px-4 py-2.5 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition duration-300 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
@@ -169,17 +169,19 @@ const SearchFilters = ({ searchTerm, setSearchTerm, categoryFilter, setCategoryF
 };
 
 // Empty state component for no posts
-const EmptyState = () => (
+const EmptyState = ({ isAdmin }) => (
   <div className="flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-800/50 rounded-xl p-10 text-center">
     <HiOutlinePhotograph className="w-16 h-16 text-gray-400 dark:text-gray-500 mb-4" />
     <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-2">No posts yet</h3>
     <p className="text-gray-500 dark:text-gray-400 mb-6">You haven't created any posts.</p>
-    <Link 
-      to="/dashboard?tab=createpost"
-      className="px-5 py-2 bg-gradient-to-r from-teal-400 to-blue-500 dark:from-teal-500 dark:to-blue-600 text-white font-medium rounded-lg transition duration-300 hover:from-teal-500 hover:to-blue-600"
-    >
-      Create your first post
-    </Link>
+    {isAdmin && (
+      <Link
+        to="/dashboard?tab=createpost"
+        className="px-5 py-2 bg-gradient-to-r from-teal-400 to-blue-500 dark:from-teal-500 dark:to-blue-600 text-white font-medium rounded-lg transition duration-300 hover:from-teal-500 hover:to-blue-600"
+      >
+        Create your first post
+      </Link>
+    )}
   </div>
 );
 
@@ -190,7 +192,7 @@ const NoResultsState = ({ setSearchTerm, setCategoryFilter }) => (
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
     </svg>
     <p className="text-gray-500 text-lg dark:text-gray-400">No posts found matching your search criteria.</p>
-    <button 
+    <button
       onClick={() => {
         setSearchTerm('');
         setCategoryFilter('all');
@@ -216,8 +218,8 @@ export default function DashPosts() {
 
   // Memoize the API URL to prevent unnecessary re-renders
   const apiUrl = useMemo(() => {
-    return currentUser?.isAdmin 
-      ? '/api/post/getallposts' 
+    return currentUser?.isAdmin
+      ? '/api/post/getallposts'
       : `/api/post/getposts?userId=${currentUser?._id}`;
   }, [currentUser?.isAdmin, currentUser?._id]);
 
@@ -225,23 +227,23 @@ export default function DashPosts() {
   const { currentItems, totalPages, filteredPosts } = useMemo(() => {
     const indexOfLastItem = currentPage * ITEMS_PER_PAGE;
     const indexOfFirstItem = indexOfLastItem - ITEMS_PER_PAGE;
-    
+
     // Filter posts based on search and category
     const filtered = userPosts.filter(post => {
-      const matchesSearch = 
-        !searchTerm || 
+      const matchesSearch =
+        !searchTerm ||
         post.title.toLowerCase().includes(searchTerm.toLowerCase());
-        
-      const matchesCategory = 
+
+      const matchesCategory =
         categoryFilter === 'all' ? true :
-        post.category === categoryFilter;
-        
+          post.category === categoryFilter;
+
       return matchesSearch && matchesCategory;
     });
-    
+
     const currentItems = filtered.slice(indexOfFirstItem, indexOfLastItem);
     const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
-    
+
     return { currentItems, totalPages, filteredPosts: filtered };
   }, [userPosts, currentPage, searchTerm, categoryFilter]);
 
@@ -266,7 +268,7 @@ export default function DashPosts() {
   // Fetch posts with useCallback to prevent unnecessary re-renders
   const fetchPosts = useCallback(async () => {
     if (!currentUser?._id) return;
-    
+
     setIsLoading(true);
     try {
       const res = await fetch(apiUrl);
@@ -290,11 +292,11 @@ export default function DashPosts() {
   // Handle post deletion confirmation
   const handleDeletePost = useCallback(async () => {
     if (!postIdToDelete) return;
-    
+
     setIsDeleting(true);
     try {
-      const res = await fetch(`/api/post/deletepost/${postIdToDelete}/${currentUser._id}`, { 
-        method: 'DELETE' 
+      const res = await fetch(`/api/post/deletepost/${postIdToDelete}/${currentUser._id}`, {
+        method: 'DELETE'
       });
       const data = await res.json();
       if (res.ok) {
@@ -328,17 +330,31 @@ export default function DashPosts() {
 
   return (
     <div className="container mx-5 px-5 py-6">
-      <div className="flex justify-between items-center mb-6 bg-gray-50 dark:bg-gray-800/50 rounded-xl p-6">
-        <h2 className="text-2xl font-semibold text-gray-700 dark:text-gray-200 flex items-center gap-3">
-          <HiDocumentText className="w-8 h-8 text-teal-400 dark:text-teal-500"/>
-          Content Management
-        </h2>
-        <div className="mt-3 md:mt-0 flex items-center text-sm text-gray-500 dark:text-gray-400">
-          <Clock className="h-4 w-4 mr-2" />
-          <span>Last updated: {new Date().toLocaleTimeString()}</span>
+      <div className="flex flex-col md:flex-row justify-between items-center mb-6 bg-gray-50 dark:bg-gray-800/50 rounded-xl p-6 gap-4">
+        <div className="flex items-center gap-4 w-full md:w-auto">
+          <h2 className="text-2xl font-semibold text-gray-700 dark:text-gray-200 flex items-center gap-3">
+            <HiDocumentText className="w-8 h-8 text-teal-400 dark:text-teal-500" />
+            Content Management
+          </h2>
+        </div>
+
+        <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto justify-end">
+          <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
+            <Clock className="h-4 w-4 mr-2" />
+            <span>Updated: {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+          </div>
+
+          {currentUser.isAdmin && (
+            <Link to="/create-post">
+              <button className="w-full sm:w-auto px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-medium rounded-xl shadow-lg shadow-indigo-500/20 transition-all transform hover:scale-[1.02] flex items-center justify-center gap-2">
+                <HiOutlinePencil className="w-5 h-5" />
+                <span>Create New Post</span>
+              </button>
+            </Link>
+          )}
         </div>
       </div>
-      
+
       {isLoading ? (
         <div className="flex justify-center items-center min-h-[300px]">
           <LoadingSpinner size="lg" color="primary" />
@@ -347,16 +363,16 @@ export default function DashPosts() {
         <>
           {userPosts.length > 0 ? (
             <>
-              <SearchFilters 
+              <SearchFilters
                 searchTerm={searchTerm}
                 setSearchTerm={setSearchTerm}
                 categoryFilter={categoryFilter}
                 setCategoryFilter={setCategoryFilter}
                 categories={categories}
               />
-              
+
               {filteredPosts.length === 0 ? (
-                <NoResultsState 
+                <NoResultsState
                   setSearchTerm={setSearchTerm}
                   setCategoryFilter={setCategoryFilter}
                 />
@@ -364,7 +380,7 @@ export default function DashPosts() {
                 <>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {currentItems.map((post, index) => (
-                      <PostCard 
+                      <PostCard
                         key={post._id}
                         post={post}
                         index={index}
@@ -373,7 +389,7 @@ export default function DashPosts() {
                       />
                     ))}
                   </div>
-                  
+
                   {/* Pagination */}
                   {totalPages > 1 && (
                     <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between mt-6">
@@ -381,22 +397,20 @@ export default function DashPosts() {
                         <button
                           onClick={() => paginate(Math.max(1, currentPage - 1))}
                           disabled={currentPage === 1}
-                          className={`relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md ${
-                            currentPage === 1 
-                              ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed' 
-                              : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'
-                          }`}
+                          className={`relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md ${currentPage === 1
+                            ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                            : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'
+                            }`}
                         >
                           Previous
                         </button>
                         <button
                           onClick={() => paginate(Math.min(totalPages, currentPage + 1))}
                           disabled={currentPage === totalPages}
-                          className={`ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md ${
-                            currentPage === totalPages 
-                              ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed' 
-                              : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'
-                          }`}
+                          className={`ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md ${currentPage === totalPages
+                            ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                            : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'
+                            }`}
                         >
                           Next
                         </button>
@@ -414,11 +428,10 @@ export default function DashPosts() {
                             <button
                               onClick={() => paginate(Math.max(1, currentPage - 1))}
                               disabled={currentPage === 1}
-                              className={`relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium ${
-                                currentPage === 1 
-                                  ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed' 
-                                  : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
-                              }`}
+                              className={`relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium ${currentPage === 1
+                                ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+                                : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+                                }`}
                             >
                               <span className="sr-only">Previous</span>
                               <HiOutlineChevronLeft className="h-5 w-5" aria-hidden="true" />
@@ -427,11 +440,10 @@ export default function DashPosts() {
                               <button
                                 key={number}
                                 onClick={() => paginate(number)}
-                                className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                                  currentPage === number
-                                    ? 'z-10 bg-teal-50 dark:bg-teal-900/30 border-teal-500 text-teal-600 dark:text-teal-400'
-                                    : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
-                                }`}
+                                className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${currentPage === number
+                                  ? 'z-10 bg-teal-50 dark:bg-teal-900/30 border-teal-500 text-teal-600 dark:text-teal-400'
+                                  : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+                                  }`}
                               >
                                 {number}
                               </button>
@@ -439,11 +451,10 @@ export default function DashPosts() {
                             <button
                               onClick={() => paginate(Math.min(totalPages, currentPage + 1))}
                               disabled={currentPage === totalPages}
-                              className={`relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium ${
-                                currentPage === totalPages 
-                                  ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed' 
-                                  : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
-                              }`}
+                              className={`relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium ${currentPage === totalPages
+                                ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+                                : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+                                }`}
                             >
                               <span className="sr-only">Next</span>
                               <HiOutlineChevronRight className="h-5 w-5" aria-hidden="true" />
@@ -457,13 +468,13 @@ export default function DashPosts() {
               )}
             </>
           ) : (
-            <EmptyState />
+            <EmptyState isAdmin={currentUser?.isAdmin} />
           )}
         </>
       )}
 
       {/* Delete Confirmation Modal */}
-      <DeleteModal 
+      <DeleteModal
         isOpen={showModal}
         onClose={() => setShowModal(false)}
         onConfirm={handleDeletePost}

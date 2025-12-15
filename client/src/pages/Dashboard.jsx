@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import DashSidebar from '../components/DashSideBar';
 import DashProfile from '../components/DashProfile';
 import DashPosts from '../components/DashPosts';
@@ -16,10 +17,11 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import UserApproval from '../components/UserApproval';
 import DashFeedback from '../components/DashFeedback';
 import DashFaqs from '../components/DashFaqs';
-import DashServices from '../components/DashServices'; 
+import DashServices from '../components/DashServices';
 
 export default function Dashboard() {
   const location = useLocation();
+  const { currentUser } = useSelector((state) => state.user);
   const [tab, setTab] = useState('');
   const [postId, setPostId] = useState('');
   const [categoryId, setCategoryId] = useState('');
@@ -68,14 +70,14 @@ export default function Dashboard() {
         {tab === 'categories' && <DashCategories />}
         {tab === 'dashlogocrud' && <DashlogoCrud />}
         {tab === 'createlogo' && <CreateLogo />}
-        {tab === 'createpost' && <CreatePost />}
-        {tab === 'updatepost' && <UpdatePost postId={postId} />}
+        {tab === 'createpost' && currentUser.isAdmin && <CreatePost />}
+        {tab === 'updatepost' && currentUser.isAdmin && <UpdatePost postId={postId} />}
         {tab === 'updatecategory' && <UpdateCategory categoryId={categoryId} />}
         {tab === 'userapproval' && <UserApproval />}
         {tab === 'feedback' && <DashFeedback />}
         {tab === 'faqs' && <DashFaqs />}
-        {tab === 'dashservices' && <DashServices />} 
-        
+        {tab === 'dashservices' && <DashServices />}
+
       </div>
     </div>
   );

@@ -1,7 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { useSelector } from 'react-redux';
-import supabase, { CDNURL } from '../supabase';
-import { v4 as uuidv4 } from 'uuid';
+
 import LoadingSpinner from '../components/LoadingSpinner';
 
 export default function LogoManagement() {
@@ -31,7 +30,7 @@ export default function LogoManagement() {
     const timer = setTimeout(() => {
       setIsPageLoading(false);
     }, 1000);
-    
+
     return () => clearTimeout(timer);
   }, []);
 
@@ -41,10 +40,10 @@ export default function LogoManagement() {
       try {
         const res = await fetch('/api/logo');
         const data = await res.json();
-        
+
         if (res.ok) {
           setLogos(data);
-          
+
           // Set current logo to the most recent one
           if (data && data.length > 0) {
             setCurrentLogo(data[0]);
@@ -89,7 +88,7 @@ export default function LogoManagement() {
       // Determine if we're creating a new logo or updating existing one
       const url = isEdit ? `/api/logo/${currentLogo._id}` : '/api/logo';
       const method = isEdit ? 'PUT' : 'POST';
-      
+
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
@@ -101,15 +100,15 @@ export default function LogoManagement() {
       });
 
       const data = await res.json();
-      
+
       if (!res.ok) {
         setPublishError(data.message || 'Something went wrong');
         return;
       }
-      
+
       // Update local state
       if (isEdit) {
-        setLogos(logos.map(logo => 
+        setLogos(logos.map(logo =>
           logo._id === currentLogo._id ? data : logo
         ));
         setCurrentLogo(data);
@@ -118,14 +117,14 @@ export default function LogoManagement() {
         setCurrentLogo(data);
         setIsEdit(true);
       }
-      
+
       setSuccessMessage(isEdit ? 'Logo updated successfully!' : 'New logo created successfully!');
       setTimeout(() => setSuccessMessage(null), 3000);
-      
+
       // Reset file states
       setFile(null);
       setPreview(null);
-      
+
     } catch (error) {
       setPublishError('Something went wrong');
       console.error(error);
@@ -150,23 +149,22 @@ export default function LogoManagement() {
     setMediaUploadError(null);
 
     try {
-      const fileName = `${uuidv4()}-${file.name}`;
-      const filePath = 'logo/' + fileName;
+      const formData = new FormData();
+      formData.append('file', file);
 
-      // Upload file to Supabase storage
-      const { data, error } = await supabase.storage
-        .from('passportinteractiveboard')
-        .upload(filePath, file);
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
 
-      if (error) {
-        throw new Error(error.message);
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || 'Upload failed');
       }
 
-      // Construct public URL
-      const mediaUrl = `${CDNURL}${filePath}`;
-      
       // Update form data with new image URL
-      setFormData(prev => ({ ...prev, image: mediaUrl }));
+      setFormData(prev => ({ ...prev, image: data.url }));
       setSuccessMessage('Image uploaded successfully');
       setTimeout(() => setSuccessMessage(null), 3000);
     } catch (error) {
@@ -180,9 +178,9 @@ export default function LogoManagement() {
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
     if (!selectedFile) return;
-    
+
     setFile(selectedFile);
-    
+
     // Validate file type
     if (selectedFile.type.startsWith('image/')) {
       // Create image preview URL
@@ -201,25 +199,25 @@ export default function LogoManagement() {
     if (!window.confirm('Are you sure you want to delete this logo?')) {
       return;
     }
-    
+
     setIsSubmitting(true);
-    
+
     try {
       const res = await fetch(`/api/logo/${currentLogo._id}`, {
         method: 'DELETE',
         credentials: 'include',
       });
-      
+
       if (!res.ok) {
         const data = await res.json();
         setPublishError(data.message || 'Failed to delete logo');
         return;
       }
-      
+
       // Update local state
       const updatedLogos = logos.filter(logo => logo._id !== currentLogo._id);
       setLogos(updatedLogos);
-      
+
       // Reset form and set new current logo if available
       if (updatedLogos.length > 0) {
         setCurrentLogo(updatedLogos[0]);
@@ -235,10 +233,10 @@ export default function LogoManagement() {
         });
         setIsEdit(false);
       }
-      
+
       setSuccessMessage('Logo deleted successfully');
       setTimeout(() => setSuccessMessage(null), 3000);
-      
+
     } catch (error) {
       setPublishError('Something went wrong');
       console.error(error);
@@ -294,7 +292,7 @@ export default function LogoManagement() {
           <p className="font-medium">{successMessage}</p>
         </div>
       )}
-      
+
 
       <form className="space-y-8" onSubmit={handleSubmit}>
         <div>
@@ -318,7 +316,7 @@ export default function LogoManagement() {
             <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-gray-300">
               Logo Image <span className="text-red-500">*</span>
             </label>
-            
+
             <div className="flex items-center space-x-4">
               <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors dark:border-gray-600 dark:hover:bg-gray-800">
                 <div className="flex flex-col items-center justify-center pt-5 pb-6">
@@ -332,10 +330,10 @@ export default function LogoManagement() {
                     PNG, JPG, SVG (max 5MB)
                   </p>
                 </div>
-                <input 
-                  type="file" 
-                  className="hidden" 
-                  accept="image/*" 
+                <input
+                  type="file"
+                  className="hidden"
+                  accept="image/*"
                   onChange={handleFileChange}
                 />
               </label>
@@ -343,11 +341,10 @@ export default function LogoManagement() {
                 type="button"
                 onClick={handleUploadMedia}
                 disabled={uploading || !file}
-                className={`px-4 py-2 rounded-lg transition-colors ${
-                  uploading || !file
+                className={`px-4 py-2 rounded-lg transition-colors ${uploading || !file
                     ? 'bg-gray-300 cursor-not-allowed text-gray-500'
                     : 'bg-blue-600 hover:bg-blue-700 text-white'
-                }`}
+                  }`}
               >
                 {uploading ? (
                   <div className="flex items-center">
@@ -357,11 +354,11 @@ export default function LogoManagement() {
                 ) : 'Upload'}
               </button>
             </div>
-            
+
             {mediaUploadError && (
               <p className="mt-2 text-sm text-red-600">{mediaUploadError}</p>
             )}
-            
+
             {!mediaUploadError && file && (
               <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
                 Selected file: {file.name} ({(file.size / (1024 * 1024)).toFixed(2)} MB)
@@ -373,21 +370,21 @@ export default function LogoManagement() {
           {preview && (
             <div className="mt-4">
               <div className="relative rounded-lg overflow-hidden shadow-md">
-                <img 
-                  src={preview} 
-                  alt="Preview" 
+                <img
+                  src={preview}
+                  alt="Preview"
                   className="w-full h-64 object-contain bg-gray-100 dark:bg-gray-700"
                 />
               </div>
             </div>
           )}
-          
+
           {!preview && formData.image && (
             <div className="mt-4">
               <div className="relative rounded-lg overflow-hidden shadow-md">
-                <img 
-                  src={formData.image} 
-                  alt="Current Logo" 
+                <img
+                  src={formData.image}
+                  alt="Current Logo"
                   className="w-full h-64 object-contain bg-gray-100 dark:bg-gray-700"
                 />
                 <div className="absolute bottom-2 right-2">
@@ -404,11 +401,10 @@ export default function LogoManagement() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className={`w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white ${
-              isSubmitting 
-                ? 'bg-blue-400 cursor-not-allowed' 
+            className={`w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white ${isSubmitting
+                ? 'bg-blue-400 cursor-not-allowed'
                 : 'bg-gradient-to-r from-teal-400 to-blue-500 hover:from-teal-500 hover:to-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
-            }`}
+              }`}
           >
             {isSubmitting ? (
               <div className="flex items-center">
