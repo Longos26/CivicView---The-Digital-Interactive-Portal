@@ -1,14 +1,16 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { HiOutlineCloudUpload, HiOutlinePhotograph, HiOutlineVideoCamera, HiOutlinePencilAlt, HiOutlineTag } from 'react-icons/hi';
 
-import RichTextEditor from '../components/RichTextEditor';
+import CanvasEditor from '../components/CanvasEditor';
 import LoadingSpinner from '../components/LoadingSpinner';
 
 export default function UpdatePost() {
   const [searchParams] = useSearchParams();
   const postId = searchParams.get('postId');
   const [file, setFile] = useState(null);
-  const [fileType, setFileType] = useState(null); // 'image' or 'video'
+  const [fileType, setFileType] = useState('image'); // 'image' or 'video'
   const [preview, setPreview] = useState(null);
   const [mediaUploadError, setMediaUploadError] = useState(null);
   const [formData, setFormData] = useState({
@@ -25,20 +27,20 @@ export default function UpdatePost() {
   const [categories, setCategories] = useState([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(false);
   const [categoryError, setCategoryError] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isPageLoading, setIsPageLoading] = useState(true);
   const videoRef = useRef(null);
+
+  const navigate = useNavigate();
 
   // Maximum file sizes (in bytes)
   const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
   const MAX_VIDEO_SIZE = 50 * 1024 * 1024; // 50MB
 
-  const navigate = useNavigate();
-
   // Fetch post data
   useEffect(() => {
     const fetchPost = async () => {
       try {
-        setIsLoading(true);
+        setIsPageLoading(true);
         const res = await fetch(`/api/post/getposts?postId=${postId}`);
         const data = await res.json();
 
@@ -74,7 +76,7 @@ export default function UpdatePost() {
         console.error('Error in fetchPost:', error);
         setPublishError('Failed to fetch post data: ' + error.message);
       } finally {
-        setIsLoading(false);
+        setIsPageLoading(false);
       }
     };
 
@@ -95,10 +97,6 @@ export default function UpdatePost() {
 
         if (res.ok) {
           setCategories(data);
-          // Set default category if available
-          if (data.length > 0) {
-            setFormData(prev => ({ ...prev, category: data[0]._id }));
-          }
         } else {
           throw new Error('Failed to fetch categories');
         }
@@ -115,8 +113,15 @@ export default function UpdatePost() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.title || !formData.content) {
-      setPublishError('Title and content are required');
+
+    if (!formData.title?.trim()) {
+      setPublishError('Title is required');
+      return;
+    }
+
+    // Basic content validation - assuming canvas content string is non-empty
+    if (!formData.content) {
+      setPublishError('Content is required');
       return;
     }
 
@@ -206,8 +211,6 @@ export default function UpdatePost() {
 
     // Determine file type
     if (selectedFile.type.startsWith('image/')) {
-      setFileType('image');
-
       // Create image preview URL
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -215,8 +218,6 @@ export default function UpdatePost() {
       };
       reader.readAsDataURL(selectedFile);
     } else if (selectedFile.type.startsWith('video/')) {
-      setFileType('video');
-
       // Create video preview URL
       const url = URL.createObjectURL(selectedFile);
       setPreview(url);
@@ -225,7 +226,7 @@ export default function UpdatePost() {
       return () => URL.revokeObjectURL(url);
     } else {
       setFile(null);
-      setMediaUploadError('Invalid file type. Please select an image or video.');
+      setMediaUploadError('Invalid file type. Please upload the correct format.');
     }
   };
 
@@ -237,242 +238,269 @@ export default function UpdatePost() {
     setMediaUploadError(null);
   };
 
+  if (isPageLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen bg-slate-50 dark:bg-slate-900">
+        <LoadingSpinner size="lg" color="primary" />
+      </div>
+    );
+  }
+
   return (
-    <div className="max-w-4xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
-      <h1 className="text-4xl font-bold text-center mb-10 text-gray-900 dark:text-white">
-        Update Content
-      </h1>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-300 py-6 md:py-12 px-4 sm:px-6">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="max-w-7xl mx-auto"
+      >
+        <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-3xl shadow-xl overflow-hidden border border-slate-200 dark:border-slate-700">
 
-      {publishError && (
-        <div className="mb-6 p-4 border-l-4 border-red-500 bg-red-50 text-red-700 rounded">
-          <p className="font-medium">{publishError}</p>
-        </div>
-      )}
+          {/* Header */}
+          <div className="relative bg-gradient-to-r from-indigo-600 to-purple-600 p-8 md:p-12 overflow-hidden">
+            <div className="absolute inset-0 bg-pattern opacity-10"></div>
+            <div className="relative z-10">
+              <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">Update Content</h1>
+              <p className="text-indigo-100 flex items-center gap-2">
+                Edit your post details and content
+              </p>
+            </div>
 
-      {isLoading ? (
-        <div className="flex flex-col items-center justify-center h-64">
-          <LoadingSpinner size="lg" />
-        </div>
-      ) : (
-        <form className="space-y-8" onSubmit={handleSubmit}>
-          <div>
-            <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">
-              Title
-            </label>
-            <input
-              id="title"
-              type="text"
-              placeholder="Enter post title"
-              required
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300"
-            />
+            {/* Decorative circles */}
+            <div className="absolute -top-12 -right-12 w-40 h-40 bg-white/20 rounded-full blur-2xl"></div>
+            <div className="absolute -bottom-8 -left-8 w-32 h-32 bg-purple-500/30 rounded-full blur-xl"></div>
           </div>
 
-          <div>
-            <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">
-              Category
-            </label>
+          <form onSubmit={handleSubmit} className="p-6 md:p-10 space-y-8">
 
-            {categoryError && (
-              <div className="mb-3 p-2 border-l-4 border-red-500 bg-red-50 text-red-700 text-sm rounded dark:bg-red-900 dark:border-red-400 dark:text-red-300">
-                {categoryError}
-              </div>
+            {publishError && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                className="p-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-300 flex items-center gap-3"
+              >
+                <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                {publishError}
+              </motion.div>
             )}
 
-            <select
-              id="category"
-              value={formData.category}
-              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300"
-              disabled={isLoadingCategories}
-            >
-              {isLoadingCategories ? (
-                <option value="">Loading categories...</option>
-              ) : categories.length === 0 ? (
-                <option value="">No categories available</option>
-              ) : (
-                <>
-                  <option value="">Select a category</option>
+            {/* Title Input */}
+            <div className="space-y-2">
+              <label htmlFor="title" className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">
+                Headline Title
+              </label>
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <HiOutlinePencilAlt className="h-5 w-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+                </div>
+                <input
+                  id="title"
+                  type="text"
+                  placeholder="Enter an engaging title..."
+                  required
+                  value={formData.title}
+                  onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+                  className="w-full pl-11 pr-4 py-4 bg-slate-50 dark:bg-slate-900/50 border-2 border-slate-200 dark:border-slate-700 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 text-slate-900 dark:text-white placeholder-slate-400 transition-all text-lg font-medium"
+                />
+              </div>
+            </div>
+
+            {/* Category Select */}
+            <div className="space-y-2">
+              <label htmlFor="category" className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">
+                Category
+              </label>
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <HiOutlineTag className="h-5 w-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+                </div>
+                <select
+                  id="category"
+                  value={formData.category}
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  className="w-full pl-11 pr-10 py-4 bg-slate-50 dark:bg-slate-900/50 border-2 border-slate-200 dark:border-slate-700 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 text-slate-900 dark:text-white appearance-none transition-all text-lg cursor-pointer"
+                  disabled={isLoadingCategories}
+                  required
+                >
+                  <option value="">Select a Category</option>
                   {categories.map((category) => (
                     <option key={category._id} value={category._id}>
                       {category.name}
                     </option>
                   ))}
-                </>
-              )}
-            </select>
-
-            <div className="mt-2 flex items-center">
-              <span className="text-sm text-gray-500 dark:text-gray-400">
-                {isLoadingCategories ? 'Loading categories...' :
-                  categories.length === 0 && !categoryError ? 'No categories available. Please create one first.' : ''}
-              </span>
-
+                </select>
+                <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                  <svg className="h-5 w-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
             </div>
-          </div>
 
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2 dark:text-gray-300">
-                Media Upload
-              </label>
-
-              {/* Media Type Tabs */}
-              <div className="flex border-b border-gray-200 mb-4">
-                <button
-                  type="button"
-                  onClick={() => handleMediaTypeChange('image')}
-                  className={`py-2 px-4 mr-2 ${fileType === 'image' || fileType === null
-                      ? 'border-b-2 border-blue-500 text-blue-600 font-medium'
-                      : 'text-gray-500 hover:text-gray-700'
-                    }`}
-                >
-                  Upload Image
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleMediaTypeChange('video')}
-                  className={`py-2 px-4 ${fileType === 'video'
-                      ? 'border-b-2 border-blue-500 text-blue-600 font-medium'
-                      : 'text-gray-500 hover:text-gray-700'
-                    }`}
-                >
-                  Upload Video
-                </button>
-              </div>
-
-              <div className="flex items-center space-x-4">
-                <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors dark:border-gray-600 dark:hover:bg-gray-800">
-                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                    <svg className="w-8 h-8 mb-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
-                    </svg>
-                    <p className="text-sm text-gray-500">
-                      <span className="font-medium">Click to upload</span> or drag and drop
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {fileType === 'video'
-                        ? 'MP4, WebM, Ogg (max 50MB)'
-                        : 'PNG, JPG, GIF (max 5MB)'}
-                    </p>
-                  </div>
-                  <input
-                    type="file"
-                    className="hidden"
-                    accept={fileType === 'video' ? 'video/*' : 'image/*'}
-                    onChange={handleFileChange}
-                  />
+            {/* Media Upload */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">
+                  Media Attachment
                 </label>
-                <button
-                  type="button"
-                  onClick={handleUploadMedia}
-                  disabled={uploading || !file}
-                  className={`px-4 py-2 rounded-lg transition-colors ${uploading || !file
-                      ? 'bg-gray-300 cursor-not-allowed text-gray-500'
-                      : 'bg-blue-600 hover:bg-blue-700 text-white'
-                    }`}
-                >
-                  {uploading ? (
-                    <div className="flex items-center">
-                      <LoadingSpinner size="sm" color="white" />
-                      <span className="ml-2">Uploading...</span>
-                    </div>
-                  ) : 'Upload'}
-                </button>
+                <div className="flex bg-slate-100 dark:bg-slate-900/50 rounded-lg p-1">
+                  <button
+                    type="button"
+                    onClick={() => handleMediaTypeChange('image')}
+                    className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${fileType === 'image'
+                      ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                      : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'
+                      }`}
+                  >
+                    Image
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleMediaTypeChange('video')}
+                    className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${fileType === 'video'
+                      ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                      : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'
+                      }`}
+                  >
+                    Video
+                  </button>
+                </div>
               </div>
+
+              <div className="group relative border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-3xl p-8 transition-colors hover:border-indigo-400 dark:hover:border-indigo-500 hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                <input
+                  type="file"
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                  accept={fileType === 'video' ? 'video/*' : 'image/*'}
+                  onChange={handleFileChange}
+                />
+
+                <div className="flex flex-col items-center justify-center text-center">
+                  <div className={`w-16 h-16 rounded-2xl flex items-center justify-center mb-4 transition-transform group-hover:scale-110 duration-300 ${fileType === 'image'
+                    ? 'bg-blue-100/50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400'
+                    : 'bg-pink-100/50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400'
+                    }`}>
+                    {fileType === 'image' ? <HiOutlinePhotograph className="w-8 h-8" /> : <HiOutlineVideoCamera className="w-8 h-8" />}
+                  </div>
+
+                  {file ? (
+                    <div className="space-y-1">
+                      <p className="text-lg font-semibold text-slate-800 dark:text-white">
+                        {file.name}
+                      </p>
+                      <p className="text-sm text-slate-500">
+                        {(file.size / (1024 * 1024)).toFixed(2)} MB
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-1">
+                      <p className="text-lg font-semibold text-slate-800 dark:text-white">
+                        Drop your {fileType} here
+                      </p>
+                      <p className="text-sm text-slate-500">
+                        or click to browse from your device
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Upload Button & Preview */}
+              <AnimatePresence>
+                {(file || formData.image || formData.video) && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="space-y-4"
+                  >
+                    {file && !formData.image && !formData.video && (
+                      <button
+                        type="button"
+                        onClick={handleUploadMedia}
+                        disabled={uploading}
+                        className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-indigo-600 text-white font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {uploading ? (
+                          <>
+                            <LoadingSpinner size="sm" color="white" />
+                            <span>Uploading...</span>
+                          </>
+                        ) : (
+                          <>
+                            <HiOutlineCloudUpload className="w-5 h-5" />
+                            <span>Upload Selected File</span>
+                          </>
+                        )}
+                      </button>
+                    )}
+
+                    {/* Preview Area */}
+                    {(preview || formData.image || formData.video) && (
+                      <div className="relative rounded-2xl overflow-hidden bg-black/5 dark:bg-black/20">
+                        {fileType === 'image' ? (
+                          <img
+                            src={formData.image || preview}
+                            alt="Preview"
+                            className="w-full h-64 md:h-80 object-cover"
+                          />
+                        ) : (
+                          <video
+                            ref={videoRef}
+                            src={formData.video || preview}
+                            controls
+                            className="w-full h-64 md:h-80 object-contain"
+                          />
+                        )}
+                        {(formData.image || formData.video) && (
+                          <div className="absolute top-4 right-4 px-3 py-1 rounded-full bg-green-500 text-white text-xs font-bold shadow-lg">
+                            UPLOADED
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               {mediaUploadError && (
-                <p className="mt-2 text-sm text-red-600">{mediaUploadError}</p>
-              )}
-
-              {!mediaUploadError && file && (
-                <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                  Selected file: {file.name} ({(file.size / (1024 * 1024)).toFixed(2)} MB)
-                </p>
+                <p className="text-red-500 text-sm text-center">{mediaUploadError}</p>
               )}
             </div>
 
-            {/* Media Preview */}
-            {fileType === 'image' && (preview || formData.image) && (
-              <div className="mt-4">
-                <div className="relative rounded-lg overflow-hidden shadow-md">
-                  <img
-                    src={preview || formData.image}
-                    alt="Preview"
-                    className="w-full h-64 object-cover"
-                  />
-                  {formData.image && !preview && (
-                    <div className="absolute bottom-2 right-2">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        Uploaded
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {fileType === 'video' && (preview || formData.video) && (
-              <div className="mt-4">
-                <div className="relative rounded-lg overflow-hidden shadow-md">
-                  <video
-                    ref={videoRef}
-                    src={formData.video || preview}
-                    controls
-                    className="w-full h-64 object-contain bg-black"
-                  />
-                  {formData.video && (
-                    <div className="absolute bottom-2 right-2">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        Uploaded
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1 dark:text-gray-300">
-              Content
-            </label>
-            <div className="border border-gray-300 rounded-lg overflow-hidden dark:border-gray-700">
-              {isLoading ? (
-                <div className="flex justify-center items-center h-64">
-                  <LoadingSpinner size="lg" />
-                </div>
-              ) : (
-                <RichTextEditor
-                  onChange={(content) => setFormData(prev => ({ ...prev, content }))}
+            {/* Rich Text Editor (Canvas) */}
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-slate-700 dark:text-slate-300 ml-1">
+                Content Details
+              </label>
+              <div className="prose-editor-container rounded-2xl overflow-hidden border-2 border-slate-200 dark:border-slate-700 focus-within:border-indigo-500 transition-colors">
+                <CanvasEditor
+                  onChange={newContent => setFormData(prev => ({ ...prev, content: newContent }))}
                   initialContent={formData.content}
-                  key={`editor-${postId}`}
                 />
-              )}
+              </div>
             </div>
-          </div>
 
-          <div>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className={`w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white ${isSubmitting
-                  ? 'bg-blue-400 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-teal-400 to-blue-500 hover:from-teal-500 hover:to-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
-                }`}
-            >
-              {isSubmitting ? (
-                <div className="flex items-center">
-                  <LoadingSpinner size="sm" color="white" />
-                  <span className="ml-2">Updating...</span>
-                </div>
-              ) : 'Update Post'}
-            </button>
-          </div>
-        </form>
-      )}
+            {/* Submit Button */}
+            <div className="pt-4">
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full py-4 text-lg font-bold text-white rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-700 hover:via-purple-700 hover:to-pink-700 transform hover:scale-[1.01] transition-all shadow-xl shadow-indigo-500/20 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none"
+              >
+                {isSubmitting ? (
+                  <div className="flex items-center justify-center gap-3">
+                    <LoadingSpinner size="sm" color="white" />
+                    <span>Updating...</span>
+                  </div>
+                ) : (
+                  'Update Content'
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+      </motion.div>
     </div>
   );
 }

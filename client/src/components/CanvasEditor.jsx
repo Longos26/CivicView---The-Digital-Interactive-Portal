@@ -89,18 +89,21 @@ export default function CanvasEditor({ onChange, initialContent }) {
             {/* Toolbar */}
             <div className="flex gap-4 p-4 bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-x-auto">
                 <button
+                    type="button"
                     onClick={() => addElement('text', { content: 'Double click to edit' })}
                     className="flex items-center gap-2 px-4 py-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-xl hover:bg-indigo-100 transition-colors font-medium whitespace-nowrap"
                 >
                     <Type size={18} /> Add Text
                 </button>
                 <button
+                    type="button"
                     onClick={handleAddButton}
                     className="flex items-center gap-2 px-4 py-2 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-xl hover:bg-emerald-100 transition-colors font-medium whitespace-nowrap"
                 >
                     <Link size={18} /> Add Button
                 </button>
                 <button
+                    type="button"
                     onClick={() => fileInputRef.current?.click()}
                     className="flex items-center gap-2 px-4 py-2 bg-pink-50 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400 rounded-xl hover:bg-pink-100 transition-colors font-medium whitespace-nowrap"
                 >
@@ -116,29 +119,33 @@ export default function CanvasEditor({ onChange, initialContent }) {
             </div>
 
             {/* Canvas Area */}
-            <div
-                ref={canvasRef}
-                className="relative w-full h-[600px] bg-slate-50 dark:bg-slate-900/50 rounded-3xl border-2 border-dashed border-gray-200 dark:border-gray-700 overflow-hidden"
-            >
-                <div className="absolute top-4 left-4 text-xs text-gray-400 pointer-events-none z-0">
-                    Canvas Board (Drag to move, Drag corner to resize)
-                </div>
+            <div className="relative w-full h-[600px] rounded-3xl border-2 border-dashed border-gray-200 dark:border-gray-700 overflow-hidden bg-slate-50 dark:bg-slate-900/50">
+                <div className="absolute inset-0 overflow-y-auto custom-scrollbar">
+                    <div
+                        ref={canvasRef}
+                        className="relative w-full h-[2000px]"
+                    >
+                        <div className="absolute top-4 left-4 text-xs text-gray-400 pointer-events-none z-0 sticky top-4">
+                            Canvas Board (Scroll down for more space • Drag to move)
+                        </div>
 
-                {elements.map((el) => (
-                    <DraggableElement
-                        key={el.id}
-                        element={el}
-                        onUpdate={updateElement}
-                        onRemove={removeElement}
-                        containerRef={canvasRef}
-                    />
-                ))}
+                        {elements.map((el) => (
+                            <DraggableElement
+                                key={el.id}
+                                element={el}
+                                onUpdate={updateElement}
+                                onRemove={removeElement}
+                                containerRef={canvasRef}
+                            />
+                        ))}
 
-                {elements.length === 0 && (
-                    <div className="absolute inset-0 flex items-center justify-center text-gray-400 pointer-events-none">
-                        <p>Select a widget above to start creating</p>
+                        {elements.length === 0 && (
+                            <div className="absolute top-1/4 left-0 right-0 flex items-center justify-center text-gray-400 pointer-events-none">
+                                <p>Select a widget above to start creating</p>
+                            </div>
+                        )}
                     </div>
-                )}
+                </div>
             </div>
         </div>
     );
@@ -215,7 +222,7 @@ const DraggableElement = ({ element, onUpdate, onRemove, containerRef }) => {
         >
             {/* Controls */}
             <div className="absolute -top-6 right-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 bg-white dark:bg-gray-800 rounded-full shadow p-1 z-50">
-                <button onClick={() => onRemove(element.id)} className="text-red-500 hover:bg-red-50 rounded-full p-1">
+                <button type="button" onClick={() => onRemove(element.id)} className="text-red-500 hover:bg-red-50 rounded-full p-1">
                     <X size={12} />
                 </button>
             </div>

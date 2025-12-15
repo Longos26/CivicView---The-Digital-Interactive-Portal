@@ -14,8 +14,30 @@ export default function CanvasRenderer({ content }) {
         return <div dangerouslySetInnerHTML={{ __html: content }} />;
     }
 
+    // Calculate dynamic height based on elements
+    const maxY = elements.reduce((max, el) => {
+        // Safe parsing for height, defaulting to 200px if 'auto' or invalid
+        let elHeight = 0;
+        if (el.height && typeof el.height === 'string' && el.height !== 'auto') {
+            elHeight = parseInt(el.height) || 0;
+        } else if (typeof el.height === 'number') {
+            elHeight = el.height;
+        } else {
+            // Fallback for 'auto' or missing height
+            elHeight = el.type === 'image' ? 300 : 100;
+        }
+
+        const elBottom = (el.y || 0) + elHeight;
+        return Math.max(max, elBottom);
+    }, 400); // Minimum height
+
+    const containerHeight = Math.max(600, maxY + 200); // 200px bottom padding
+
     return (
-        <div className="relative w-full min-h-[600px] bg-slate-50 dark:bg-slate-900/20 rounded-3xl overflow-hidden shadow-inner">
+        <div
+            className="relative w-full bg-slate-50 dark:bg-slate-900/20 rounded-3xl overflow-hidden shadow-inner transform transition-all"
+            style={{ height: `${containerHeight}px` }}
+        >
             {elements.map((el) => {
                 return (
                     <div
@@ -40,7 +62,7 @@ export default function CanvasRenderer({ content }) {
                                     href={el.url}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="flex items-center justify-center px-6 py-3 bg-indigo-600 text-white rounded-full font-semibold shadow-lg hover:bg-indigo-700 transition transform hover:-translate-y-0.5 active:translate-y-0 w-full text-center truncate"
+                                    className="flex items-center justify-center px-6 py-3 !bg-indigo-600 !text-white rounded-full font-semibold shadow-lg hover:!bg-indigo-700 transition transform hover:-translate-y-0.5 active:translate-y-0 w-full text-center truncate !no-underline"
                                 >
                                     {el.content}
                                 </a>
