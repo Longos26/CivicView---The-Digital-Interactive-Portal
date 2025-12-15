@@ -39,7 +39,11 @@ const postSchema = new mongoose.Schema(
         userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
         viewedAt: { type: Date, default: Date.now }
       }
-    ]
+    ],
+    likes: {
+      type: Array,
+      default: [],
+    },
   },
   { timestamps: true }
 );

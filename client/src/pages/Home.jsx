@@ -1,18 +1,19 @@
 import { useState, useEffect } from 'react';
-import { HiOutlineClock, HiOutlineTag, HiOutlineSearch, HiOutlineFilter } from 'react-icons/hi';
+import { useSelector } from 'react-redux';
+import { HiOutlineClock, HiOutlineTag, HiOutlineSearch, HiOutlineFilter, HiOutlineShare, HiOutlineEye } from 'react-icons/hi';
 import { Link } from 'react-router-dom';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MdArrowForward, MdFavoriteBorder, MdFavorite } from 'react-icons/md';
 
 export default function KioskHome() {
+  const { currentUser } = useSelector((state) => state.user);
   const [loading, setLoading] = useState(true);
   const [posts, setPosts] = useState([]);
   const [error, setError] = useState(null);
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [favorites, setFavorites] = useState([]);
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
 
   useEffect(() => {
@@ -80,26 +81,38 @@ export default function KioskHome() {
   };
 
   // Handle favorites
-  const toggleFavorite = (e, postId) => {
+  const toggleFavorite = async (e, postId) => {
     e.preventDefault(); // Prevent navigation when clicking the favorite button
     e.stopPropagation(); // Stop the event from bubbling up to the Link
 
-    const newFavorites = favorites.includes(postId)
-        ? prev.filter(id => id !== postId)
-        : [...favorites, postId];
-
-    setFavorites(newFavorites);
-    // To make favorites persistent, you could save them to localStorage:
-    // localStorage.setItem('favorites', JSON.stringify(newFavorites));
-  };
-
-  // Load favorites from localStorage on initial render
-  useEffect(() => {
-    const savedFavorites = localStorage.getItem('favorites');
-    if (savedFavorites) {
-      setFavorites(JSON.parse(savedFavorites));
+    if (!currentUser) {
+      alert("Please login to like the post");
+      return;
     }
-  }, []);
+
+    try {
+      const res = await fetch(`/api/post/likePost/${postId}`, {
+        method: 'PUT',
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setPosts(
+          posts.map((post) =>
+            post._id === postId
+              ? { ...post, likes: data.likes }
+              : post
+          )
+        );
+      } else {
+        console.log("API error:", data.message);
+        if (res.status === 401) {
+          alert("Session expired. Please login again.");
+        }
+      }
+    } catch (error) {
+      console.log(error.message);
+    }
+  };
 
   if (loading) {
     return (
@@ -125,97 +138,86 @@ export default function KioskHome() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-300">
       {/* Header Section */}
       <motion.div
         initial={{ opacity: 0, y: -30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="sticky top-0 z-40 backdrop-blur-md bg-slate-900/80 border-b border-slate-700/50 shadow-lg"
+        className="sticky top-0 z-40 backdrop-blur-xl bg-white/70 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-800 shadow-sm"
       >
-        <div className="max-w-7xl mx-auto px-4 py-6">
-          {/* Title */}
-          <div className="mb-6">
-            <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent mb-2">
-              Interactive Board
-            </h1>
-            <p className="text-slate-400 text-lg">Discover and explore curated content</p>
-          </div>
-
-          {/* Search Bar */}
-          <div className="flex gap-3 mb-6">
-            <div className="flex-1 relative">
-              <HiOutlineSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400 text-xl" />
-              <input
-                type="text"
-                placeholder="Search content..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition"
-              />
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            {/* Title */}
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
+                CivicView Board
+              </h1>
+              <p className="text-slate-500 dark:text-slate-400 text-sm">Explore community insights</p>
             </div>
-            <button
-              onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
-              className="px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-slate-300 hover:text-cyan-400 hover:border-cyan-500 transition flex items-center gap-2"
-              title={`Switch to ${viewMode === 'grid' ? 'list' : 'grid'} view`}
-            >
-              <HiOutlineFilter className="text-xl" />
-            </button>
+
+            {/* Search and Filter */}
+            <div className="flex items-center gap-3 flex-1 md:max-w-md w-full">
+              <div className="relative flex-1 group">
+                <HiOutlineSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+                <input
+                  type="text"
+                  placeholder="Search ideas..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2.5 bg-slate-100 dark:bg-slate-800 border-none rounded-full text-slate-800 dark:text-slate-200 placeholder-slate-500 focus:ring-2 focus:ring-indigo-500/50 transition-all shadow-inner"
+                />
+              </div>
+              <button
+                onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
+                className="p-2.5 bg-slate-100 dark:bg-slate-800 rounded-full text-slate-600 dark:text-slate-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                title={`Switch to ${viewMode === 'grid' ? 'list' : 'grid'} view`}
+              >
+                <HiOutlineFilter className="text-xl" />
+              </button>
+            </div>
+          </div>
+
+          {/* Categories Scroll */}
+          <div className="mt-4 overflow-x-auto pb-2 scrollbar-hide">
+            <div className="flex gap-2 min-w-max">
+              <button
+                onClick={() => setSelectedCategory(null)}
+                className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ${selectedCategory === null
+                  ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-md transform scale-105'
+                  : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700'
+                  }`}
+              >
+                All
+              </button>
+              {categories.map((category) => (
+                <button
+                  key={category._id}
+                  onClick={() => handleCategoryClick(category._id)}
+                  className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-200 flex items-center gap-2 ${selectedCategory === category._id
+                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-500/30 transform scale-105'
+                    : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700'
+                    }`}
+                >
+                  {selectedCategory === category._id && <HiOutlineTag className="w-3 h-3" />}
+                  {category.name}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </motion.div>
 
-      {/* Categories section */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.2 }}
-        className="max-w-7xl mx-auto px-4 py-8"
-      >
-        <div className="flex flex-wrap gap-3">
-          <motion.button
-            onClick={() => setSelectedCategory(null)}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className={`px-6 py-2.5 rounded-full font-medium transition duration-200 flex items-center gap-2 ${
-              selectedCategory === null
-                ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-lg shadow-cyan-500/50'
-                : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
-            }`}
-          >
-            <span className="text-lg">✨</span>
-            All Content
-          </motion.button>
-
-          {categories.map((category) => (
-            <motion.button
-              key={category._id}
-              onClick={() => handleCategoryClick(category._id)}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className={`px-6 py-2.5 rounded-full font-medium transition duration-200 flex items-center gap-2 ${
-                selectedCategory === category._id
-                  ? 'bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-lg shadow-purple-500/50'
-                  : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
-              }`}
-            >
-              <HiOutlineTag className="h-4 w-4" />
-              {category.name}
-            </motion.button>
-          ))}
-        </div>
-      </motion.div>
-
-      {/* Content Grid/List */}
-      <div className="max-w-7xl mx-auto px-4 pb-12">
+      {/* Content Area */}
+      <div className="max-w-7xl mx-auto px-4 py-6">
         <AnimatePresence mode="wait">
           {viewMode === 'grid' ? (
+            // Standard Grid Layout (Uniform Sizes)
             <motion.div
               key="grid"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
               className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
             >
               {filteredPosts.map((post, index) => (
@@ -223,65 +225,96 @@ export default function KioskHome() {
                   key={post._id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: index * 0.05 }}
-                  className="group"
+                  transition={{ duration: 0.4, delay: index * 0.05 }}
+                  className="group relative h-full"
                 >
-                  <Link
-                    to={`/post/${post.slug}`}
-                    className="relative rounded-xl overflow-hidden h-80 block"
-                  >
-                    <img
-                      src={post.image}
-                      alt={post.title}
-                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition duration-500"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent opacity-0 group-hover:opacity-100 transition duration-300">
-                      <div className="absolute bottom-0 left-0 right-0 p-6">
-                        <h3 className="text-lg font-bold text-white mb-2 line-clamp-2">{post.title}</h3>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-slate-300 flex items-center gap-1">
-                            <HiOutlineClock className="h-4 w-4" />
-                            {calculateReadTime(post.content)} min read
-                          </span>
-                          <MdArrowForward className="text-cyan-400 text-xl group-hover:translate-x-1 transition" />
+                  <div className="bg-white dark:bg-slate-800 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 dark:border dark:border-slate-700/50 h-full flex flex-col">
+                    {/* Image Container */}
+                    <Link to={`/post/${post.slug}`} className="block relative overflow-hidden flex-shrink-0">
+                      <img
+                        src={post.image}
+                        alt={post.title}
+                        className="w-full h-48 object-cover transform group-hover:scale-105 transition-transform duration-500"
+                      />
+                      {/* Overlay Actions */}
+                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-4 backdrop-blur-[2px]">
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            // Add share logic here
+                          }}
+                          className="p-3 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-white hover:text-slate-900 transition-all transform hover:scale-110"
+                          title="Share"
+                        >
+                          <HiOutlineShare className="text-xl" />
+                        </button>
+                        <button
+                          className="p-3 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-white hover:text-slate-900 transition-all transform hover:scale-110"
+                          title="View Details"
+                        >
+                          <HiOutlineEye className="text-xl" />
+                        </button>
+                      </div>
+                    </Link>
+
+                    {/* Content */}
+                    <div className="p-5 flex flex-col flex-1">
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="px-2 py-1 text-xs font-semibold rounded-md bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-800">
+                          {categories.find(cat => cat._id === post.category)?.name || 'General'}
+                        </span>
+                        <span className="text-xs text-slate-400 flex items-center gap-1 ml-auto">
+                          <HiOutlineClock className="w-3 h-3" />
+                          {calculateReadTime(post.content)} min
+                        </span>
+                      </div>
+
+                      <Link to={`/post/${post.slug}`}>
+                        <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-2 leading-tight group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors line-clamp-2">
+                          {post.title}
+                        </h3>
+                      </Link>
+
+                      <p className="text-slate-600 dark:text-slate-400 text-sm line-clamp-3 mb-4 flex-1">
+                        {post.content.replace(/<[^>]+>/g, '')}
+                      </p>
+
+                      {/* Footer */}
+                      <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-700 mt-auto">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-blue-400 to-purple-500 flex items-center justify-center text-[10px] text-white font-bold">
+                            CV
+                          </div>
+                          <span className="text-xs text-slate-500 dark:text-slate-400">CivicView</span>
                         </div>
+
+                        <button
+                          onClick={(e) => toggleFavorite(e, post._id)}
+                          className="flex items-center gap-1.5 text-slate-500 hover:text-red-500 transition-colors group/btn"
+                        >
+                          <span className="text-xs font-medium group-hover/btn:text-red-500 transition-colors">
+                            {post.likes?.length || 0}
+                          </span>
+                          {post.likes && post.likes.includes(currentUser?._id) ? (
+                            <MdFavorite className="text-lg text-red-500" />
+                          ) : (
+                            <MdFavoriteBorder className="text-lg group-hover/btn:scale-110 transition-transform" />
+                          )}
+                        </button>
                       </div>
                     </div>
-                  </Link>
-
-                  {/* Card Footer */}
-                  <div className="mt-4 p-4 bg-slate-800/50 border border-slate-700 rounded-lg">
-                    <div className="flex items-start justify-between mb-3">
-                      <span className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-purple-300 text-xs px-3 py-1 rounded-full border border-purple-500/30">
-                        <HiOutlineTag className="h-3 w-3" />
-                        {categories.find(cat => cat._id === post.category)?.name || 'Uncategorized'}
-                      </span>
-                      <motion.button
-                        onClick={(e) => toggleFavorite(e, post._id)}
-                        whileHover={{ scale: 1.2 }}
-                        whileTap={{ scale: 0.9 }}
-                        className="text-xl transition"
-                      >
-                        {favorites.includes(post._id) ? (
-                          <MdFavorite className="text-red-500" />
-                        ) : (
-                          <MdFavoriteBorder className="text-slate-400 hover:text-red-500" />
-                        )}
-                      </motion.button>
-                    </div>
-                    <p className="text-sm text-slate-400 line-clamp-2">{post.content.substring(0, 100)}...</p>
                   </div>
                 </motion.div>
               ))}
             </motion.div>
           ) : (
+            // List View
             <motion.div
               key="list"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              className="space-y-4"
+              className="max-w-3xl mx-auto space-y-4"
             >
               {filteredPosts.map((post, index) => (
                 <motion.div
@@ -289,45 +322,50 @@ export default function KioskHome() {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.3, delay: index * 0.05 }}
-                  className="group bg-slate-800/50 border border-slate-700 rounded-lg overflow-hidden hover:border-cyan-500/50 transition"
+                  className="group bg-white dark:bg-slate-800 rounded-xl p-4 shadow-sm hover:shadow-md transition-all border border-slate-100 dark:border-slate-700"
                 >
-                  <Link
-                    to={`/post/${post.slug}`}
-                    className="flex gap-4 p-4 hover:bg-slate-800 transition"
-                  >
-                    <img
-                      src={post.image}
-                      alt={post.title}
-                      className="w-32 h-32 object-cover rounded-lg group-hover:scale-105 transition duration-300"
-                    />
-                    <div className="flex-1 flex flex-col justify-between">
+                  <Link to={`/post/${post.slug}`} className="flex gap-5">
+                    <div className="w-32 h-32 flex-shrink-0 rounded-lg overflow-hidden">
+                      <img
+                        src={post.image}
+                        alt={post.title}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                      />
+                    </div>
+                    <div className="flex-1 flex flex-col justify-between py-1">
                       <div>
-                        <h3 className="text-lg font-bold text-white mb-2 group-hover:text-cyan-400 transition">{post.title}</h3>
-                        <p className="text-sm text-slate-400 line-clamp-2">{post.content.substring(0, 150)}...</p>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <span className="inline-flex items-center gap-2 bg-gradient-to-r from-purple-500/20 to-pink-500/20 text-purple-300 text-xs px-3 py-1 rounded-full border border-purple-500/30">
-                            <HiOutlineTag className="h-3 w-3" />
-                            {categories.find(cat => cat._id === post.category)?.name || 'Uncategorized'}
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs font-medium text-indigo-600 dark:text-indigo-400">
+                            {categories.find(cat => cat._id === post.category)?.name || 'General'}
                           </span>
-                          <span className="text-xs text-slate-500 flex items-center gap-1">
-                            <HiOutlineClock className="h-3 w-3" />
-                            {calculateReadTime(post.content)} min
+                          <span className="text-xs text-slate-400">
+                            {new Date(post.updatedAt).toLocaleDateString()}
                           </span>
                         </div>
-                        <motion.button
+                        <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors line-clamp-1">
+                          {post.title}
+                        </h3>
+                        <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2">
+                          {post.content.replace(/<[^>]+>/g, '')}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center justify-between mt-2">
+                        <span className="text-xs text-slate-500 flex items-center gap-1">
+                          <HiOutlineClock className="w-3 h-3" />
+                          {calculateReadTime(post.content)} min read
+                        </span>
+                        <button
                           onClick={(e) => toggleFavorite(e, post._id)}
-                          whileHover={{ scale: 1.2 }}
-                          whileTap={{ scale: 0.9 }}
-                          className="text-xl transition"
+                          className="flex items-center gap-1 text-slate-400 hover:text-red-500 transition-colors"
                         >
-                          {favorites.includes(post._id) ? (
+                          <span className="text-xs">{post.likes?.length || 0}</span>
+                          {post.likes && post.likes.includes(currentUser?._id) ? (
                             <MdFavorite className="text-red-500" />
                           ) : (
-                            <MdFavoriteBorder className="text-slate-400 hover:text-red-500" />
+                            <MdFavoriteBorder />
                           )}
-                        </motion.button>
+                        </button>
                       </div>
                     </div>
                   </Link>
@@ -336,46 +374,37 @@ export default function KioskHome() {
             </motion.div>
           )}
         </AnimatePresence>
-      </div>
 
-      {/* Empty State */}
-      {filteredPosts.length === 0 && !loading && !error && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="flex flex-col items-center justify-center py-20 text-center"
-        >
-          <div className="text-6xl mb-4">🔍</div>
-          <h2 className="text-3xl font-bold text-white mb-2">
-            {searchQuery
-              ? 'No Results Found'
-              : selectedCategory
-              ? 'No Content in This Category'
-              : 'No Content Available'}
-          </h2>
-          <p className="text-slate-400 text-lg mb-6 max-w-md">
-            {searchQuery
-              ? `Try adjusting your search terms or browse all content.`
-              : selectedCategory
-              ? 'Try selecting a different category or check back later.'
-              : 'Check back later for new content.'}
-          </p>
-          {(searchQuery || selectedCategory) && (
-            <motion.button
-              onClick={() => {
-                setSearchQuery('');
-                setSelectedCategory(null);
-              }}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-lg font-medium hover:shadow-lg hover:shadow-cyan-500/50 transition"
-            >
-              Clear Filters
-            </motion.button>
-          )}
-        </motion.div>
-      )}
+        {/* Empty State */}
+        {filteredPosts.length === 0 && !loading && !error && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="flex flex-col items-center justify-center py-20 text-center"
+          >
+            <div className="w-24 h-24 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-6">
+              <HiOutlineSearch className="text-4xl text-slate-400" />
+            </div>
+            <h2 className="text-2xl font-bold text-slate-800 dark:text-white mb-2">
+              No content found
+            </h2>
+            <p className="text-slate-500 dark:text-slate-400 max-w-md mx-auto mb-8">
+              We couldn't find any posts matching your criteria. Try adjusting your filters or search terms.
+            </p>
+            {(searchQuery || selectedCategory) && (
+              <button
+                onClick={() => {
+                  setSearchQuery('');
+                  setSelectedCategory(null);
+                }}
+                className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full font-medium transition-colors shadow-lg shadow-indigo-500/30"
+              >
+                Clear All Filters
+              </button>
+            )}
+          </motion.div>
+        )}
+      </div>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import express from 'express';
 import { verifyToken } from '../utils/verifyUser.js';
-import { create, deletepost, getposts, updatepost, getPostViews } from '../controllers/post.controller.js';
+import { create, deletepost, getposts, updatepost, getPostViews, likePost } from '../controllers/post.controller.js';
 import Post from '../models/post.model.js';
 
 const router = express.Router();
@@ -8,9 +8,10 @@ const router = express.Router();
 router.post('/create', verifyToken, create);
 router.get('/getposts', getposts);
 router.get('/getallposts', getposts);
-router.get('/postviews', verifyToken, getPostViews); 
+router.get('/postviews', verifyToken, getPostViews);
 router.delete('/deletepost/:postId/:userId', verifyToken, deletepost);
 router.put('/updatepost/:postId/:userId', verifyToken, updatepost);
+router.put('/likePost/:postId', verifyToken, likePost);
 
 // Route for viewing a single post
 router.put('/view/:postId', async (req, res) => {
